@@ -70,14 +70,14 @@ export default function Header({ open }) {
       }}
       className="w-full text-left px-3 py-2 hover:bg-gray-800"
     >
-      Profile
+      Hồ Sơ
     </button>
 
     <button
       onClick={handleLogout}
       className="w-full text-left px-3 py-2 hover:bg-red-600"
     >
-      Logout
+      Đăng Xuất
     </button>
 
   </div>

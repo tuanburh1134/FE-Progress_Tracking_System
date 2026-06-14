@@ -13,7 +13,7 @@ export default function ProjectPage({ projectList, setProjectList }) {
     <div className="text-white">
 
       {/* TITLE */}
-      <h1 className="text-2xl font-bold mb-6">Projects</h1>
+      <h1 className="text-2xl font-bold mb-6">Dự Án</h1>
 
       {/* GRID PROJECTS */}
       <div className="grid grid-cols-2 gap-6">
@@ -42,22 +42,22 @@ export default function ProjectPage({ projectList, setProjectList }) {
             <div className="text-sm text-gray-400 space-y-1">
 
               <p>
-                📌 Tasks: {p.tasks?.length || 0}
+                📌 Nhiệm vụ: {p.tasks?.length || 0}
               </p>
 
               <p>
-                👥 Members: {p.members?.length || 0}
+                👥 Thành viên: {p.members?.length || 0}
               </p>
 
               <p>
-                📅 Created: {p.createdAt || "N/A"}
+                📅 Ngày tạo: {p.createdAt || "Chưa rõ"}
               </p>
 
             </div>
 
             {/* MINI HINT */}
             <div className="mt-4 text-xs text-blue-400">
-              Click to open board →
+              Nhấp để mở bảng →
             </div>
 
           </div>

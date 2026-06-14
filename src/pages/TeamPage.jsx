@@ -69,9 +69,9 @@ export default function TeamPage() {
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold">Team</h1>
+          <h1 className="text-2xl font-bold">Nhóm</h1>
           <p className="text-gray-400 text-sm">
-            Manage project members
+            Quản lý thành viên dự án
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export default function TeamPage() {
           }}
           className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500"
         >
-          + Add Member
+          + Thêm Thành Viên
         </button>
       </div>
 
@@ -99,7 +99,7 @@ export default function TeamPage() {
             {/* ACTIVE */}
             <div className="absolute top-4 right-4 flex items-center gap-1 text-green-400 text-sm">
               <span className="w-2 h-2 bg-green-400 rounded-full"></span>
-              Active
+              Hoạt động
             </div>
 
             {/* AVATAR */}
@@ -134,7 +134,7 @@ export default function TeamPage() {
                 onClick={() => handleEdit(m)}
                 className="flex-1 bg-blue-600/20 text-blue-400 py-2 rounded-lg hover:bg-blue-600/30"
               >
-                Edit
+                Chỉnh sửa
               </button>
 
               <button
@@ -144,7 +144,7 @@ export default function TeamPage() {
                 }}
                 className="flex-1 bg-red-600/20 text-red-400 py-2 rounded-lg hover:bg-red-600/30"
               >
-                Remove
+                Xóa
               </button>
             </div>
 
@@ -159,7 +159,7 @@ export default function TeamPage() {
           <div className="bg-[#0b0f1a] p-6 rounded-xl w-[420px] border border-gray-700">
 
             <h2 className="text-lg font-bold mb-4">
-              {editId ? "Edit Member" : "Add Member"}
+              {editId ? "Chỉnh sửa thành viên" : "Thêm thành viên"}
             </h2>
 
             <input
@@ -167,7 +167,7 @@ export default function TeamPage() {
               onChange={(e) =>
                 setForm({ ...form, name: e.target.value })
               }
-              placeholder="Name"
+              placeholder="Họ và tên"
               className="w-full p-3 mb-3 rounded bg-black border border-gray-700"
             />
 
@@ -197,14 +197,14 @@ export default function TeamPage() {
                 onClick={() => setOpenForm(false)}
                 className="text-gray-400"
               >
-                Cancel
+                Hủy
               </button>
 
               <button
                 onClick={handleSubmit}
                 className="bg-blue-600 px-4 py-2 rounded-lg"
               >
-                {editId ? "Update" : "Create"}
+                {editId ? "Cập nhật" : "Tạo mới"}
               </button>
             </div>
 
@@ -220,11 +220,11 @@ export default function TeamPage() {
           <div className="bg-[#0b0f1a] p-6 rounded-xl w-[380px] border border-gray-700">
 
             <h2 className="text-lg font-bold mb-3 text-red-400">
-              Delete Member
+              Xóa Thành Viên
             </h2>
 
             <p className="text-gray-300 mb-5">
-              Are you sure you want to remove this member?
+              Bạn có chắc chắn muốn xóa thành viên này không?
             </p>
 
             <div className="flex justify-end gap-2">
@@ -233,14 +233,14 @@ export default function TeamPage() {
                 onClick={() => setOpenDelete(false)}
                 className="text-gray-400"
               >
-                Cancel
+                Hủy
               </button>
 
               <button
                 onClick={handleDelete}
                 className="bg-red-600 px-4 py-2 rounded-lg"
               >
-                Delete
+                Xóa
               </button>
 
             </div>

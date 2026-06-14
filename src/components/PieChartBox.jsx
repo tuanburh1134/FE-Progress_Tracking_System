@@ -22,7 +22,7 @@ const CustomTooltip = ({ active, payload }) => {
 export default function PieChartBox({ data }) {
   return (
     <div className="bg-[#0b0f1a] p-4 rounded-xl border border-gray-800">
-      <h2 className="text-white text-sm mb-4">Task Status</h2>
+      <h2 className="text-white text-sm mb-4">Trạng Thái Công Việc</h2>
 
       <div style={{ width: "100%", height: 250 }}>
         <ResponsiveContainer>

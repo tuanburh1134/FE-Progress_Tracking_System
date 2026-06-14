@@ -12,9 +12,9 @@ export default function Sidebar({ open, setOpen }) {
   }, []);
 
   const menu = [
-    { name: "Dashboard", path: "/dashboard" },
-    { name: "Project", path: "/project" },
-    { name: "Team", path: "/team" },
+    { name: "Bảng Điều Khiển", path: "/dashboard" },
+    { name: "Dự Án", path: "/project" },
+    { name: "Nhóm", path: "/team" },
   ];
 
   return (
