@@ -1,16 +1,50 @@
 import { useState } from "react";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { Link, useNavigate } from "react-router-dom";
+import apiClient from "../services/api";
+import { ENDPOINTS } from "../services/endpoints";
+import { STORAGE_KEYS } from "../constants";
+import useAuthStore from "../store/authStore";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [show, setShow] = useState(false);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e) => {
+  const navigate = useNavigate();
+  const setAuth = useAuthStore((s) => s.setAuth);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate("/dashboard");
+    setError("");
+
+    if (!email.trim() || !password.trim()) {
+      setError("Vui lòng nhập đầy đủ email và mật khẩu.");
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await apiClient.post(ENDPOINTS.AUTH.LOGIN, { email, password });
+      const { accessToken, user } = res.data.data;
+
+      // Lưu token vào localStorage để api.ts interceptor đọc được
+      localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, accessToken);
+
+      // Lưu vào Zustand store (persist vào localStorage)
+      setAuth(user, accessToken);
+
+      navigate("/dashboard");
+    } catch (err) {
+      const msg =
+        err.response?.data?.message ||
+        "Email hoặc mật khẩu không đúng. Vui lòng thử lại.";
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -25,26 +59,33 @@ export default function LoginPage() {
             PH
           </div>
           <h1 className="text-2xl font-bold mt-3">ProjectHub</h1>
-          <p className="text-gray-400 text-sm">Sign in to your account</p>
+          <p className="text-gray-400 text-sm">Đăng nhập vào tài khoản của bạn</p>
         </div>
+
+        {/* Thông báo lỗi */}
+        {error && (
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+            {error}
+          </div>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
 
           {/* Email */}
           <div>
-            <label className="text-sm text-gray-300">Email Address</label>
+            <label className="text-sm text-gray-300">Địa chỉ Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="demo@example.com"
+              placeholder="example@email.com"
               className="w-full mt-1 p-3 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none"
             />
           </div>
 
-          {/* Password */}
+          {/* Mật khẩu */}
           <div>
-            <label className="text-sm text-gray-300">Password</label>
+            <label className="text-sm text-gray-300">Mật khẩu</label>
             <div className="relative">
               <input
                 type={show ? "text" : "password"}
@@ -53,7 +94,6 @@ export default function LoginPage() {
                 placeholder="••••••••"
                 className="w-full mt-1 p-3 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none pr-10"
               />
-
               <button
                 type="button"
                 onClick={() => setShow(!show)}
@@ -62,40 +102,42 @@ export default function LoginPage() {
                 {show ? <FiEye /> : <FiEyeOff />}
               </button>
             </div>
-
-            <p className="text-xs text-gray-500 mt-1">
-              Demo password: <span className="text-gray-300">demo</span>
-            </p>
           </div>
 
-          {/* Button */}
+          {/* Nút đăng nhập */}
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 transition p-3 rounded-lg font-semibold"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 transition p-3 rounded-lg font-semibold flex items-center justify-center disabled:opacity-60 disabled:cursor-not-allowed"
           >
-            Sign In
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
+                </svg>
+                Đang đăng nhập...
+              </span>
+            ) : (
+              "Đăng Nhập"
+            )}
           </button>
 
           {/* Divider */}
           <div className="flex items-center gap-2 text-gray-500 text-sm">
             <div className="flex-1 h-px bg-gray-800"></div>
-            Or
+            Hoặc
             <div className="flex-1 h-px bg-gray-800"></div>
           </div>
 
-          {/* Sign up */}
+          {/* Đăng ký */}
           <p className="text-center text-sm text-gray-400">
-            Don’t have an account?{" "}
-            <Link to="/register" className="text-blue-500">
-              Sign up
+            Chưa có tài khoản?{" "}
+            <Link to="/register" className="text-blue-500 hover:text-blue-400">
+              Đăng ký ngay
             </Link>
           </p>
         </form>
-
-        {/* Footer */}
-        <div className="mt-6 text-xs text-center text-gray-600 border-t border-gray-800 pt-4">
-          Demo Account: any email + password <span className="text-gray-300">demo</span>
-        </div>
 
       </div>
     </div>

@@ -28,7 +28,7 @@ export default function LineChartBox({ data }) {
   return (
     <div className="bg-[#0b0f1a] p-4 rounded-xl border border-gray-800 shadow-lg">
       <h3 className="mb-4 font-semibold text-white">
-        Team Activity
+        Hoạt Động Nhóm
       </h3>
 
       <ResponsiveContainer width="100%" height={260}>

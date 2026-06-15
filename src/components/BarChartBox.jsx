@@ -29,7 +29,7 @@ export default function BarChartBox({ data }) {
   return (
     <div className="col-span-2 bg-[#0b0f1a] p-4 rounded-xl border border-gray-800 shadow-lg">
       <h3 className="mb-4 font-semibold text-white">
-        Project Progress
+        Tiến Độ Dự Án
       </h3>
 
       <ResponsiveContainer width="100%" height={260}>
