@@ -1,4 +1,5 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
+import { askGemini } from "../services/geminiService";
 import { useParams, useNavigate } from "react-router-dom";
 import {
   DndContext, DragOverlay, PointerSensor,
@@ -14,6 +15,7 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
+import useAuthStore from "../store/authStore";
 
 /* ─── helpers ─── */
 const isOverdue = (task) => {
@@ -373,6 +375,7 @@ const TABS = [
   { id: "cicd",     label: "Luồng Đẩy Code & Kiểm thử (CI/CD Git)" },
   { id: "ai",       label: "Trung tâm Trợ lý AI (AI Hub & Chatbot)" },
   { id: "report",   label: "Báo cáo & Phân tích Rủi ro" },
+  { id: "members",  label: "Thành viên" },
 ];
 
 /* ═══════════════════════════════════════
@@ -381,23 +384,26 @@ const TABS = [
 function AIHubTab({ tasks, team, saveTasks }) {
   const bottomRef = useRef(null);
 
-  const [messages, setMessages] = useState([
+  const [messages,        setMessages]        = useState([
     {
       from: "ai",
       type: "text",
       text: [
-        "Xin chào! Tôi là **Trợ lý AI** của dự án.",
+        "✨ Xin chào! Tôi là **Trợ lý AI Gemini** của dự án.",
         "Tôi có thể giúp bạn:",
-        "• Phân tích và sửa lỗi code",
+        "• Phân tích và gợi ý sửa lỗi code",
         "• Điều phối công việc khi trễ hạn",
         "• Đề xuất hoán đổi task giữa các thành viên",
+        "• Trả lời bất kỳ câu hỏi nào về dự án!",
       ].join("\n"),
     },
   ]);
-  const [input, setInput] = useState("");
-  const [typing, setTyping] = useState(false);
-  const [selectedTask, setSelectedTask] = useState("");
-  const [reassignProposal, setReassignProposal] = useState(null);
+  const [input,           setInput]           = useState("");
+  const [typing,          setTyping]          = useState(false);
+  const [selectedTask,    setSelectedTask]    = useState("");
+  const [reassignProposal,setReassignProposal]= useState(null);
+  /** Lưu lịch sử hội thoại để gửi cho Gemini (tiết kiệm token: chỉ 4 tin nhắn cuối) */
+  const chatHistory = useRef([]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -531,26 +537,57 @@ public void process(String input) {
     }]);
   };
 
-  /* ── Gửi tin nhắn thường ── */
-  const send = () => {
+
+  /* ── Gửi tin nhắn — gọi Gemini thực sự ── */
+  const send = async () => {
     const text = input.trim();
     if (!text) return;
     setMessages((p) => [...p, { from: "user", type: "text", text }]);
     setInput("");
 
-    /* Kiểm tra từ khóa */
+    // Từ khoá đặc biệt → xử lý local, không tốn token AI
     const lower = text.toLowerCase();
-    if (lower.includes("không thể hoàn thành") || lower.includes("trễ hạn") || lower.includes("không xong")) {
+    if (
+      lower.includes("không thể hoàn thành") ||
+      lower.includes("trễ hạn") ||
+      lower.includes("không xong")
+    ) {
       handleCannotFinish();
-    } else if (lower.includes("lỗi") || lower.includes("bug") || lower.includes("fix") || lower.includes("sửa")) {
-      pushAI({ type: "text", text: "Vui lòng chọn task có lỗi từ danh sách bên dưới rồi bấm \"Phân tích lỗi\" để tôi đọc lịch sử code và gợi ý sửa." });
-    } else {
+      return;
+    }
+    if (
+      lower.includes("lỗi") ||
+      lower.includes("bug") ||
+      lower.includes("fix") ||
+      lower.includes("sửa")
+    ) {
       pushAI({
         type: "text",
-        text: `Tôi hiểu yêu cầu của bạn về: "${text}". Dựa trên tiến độ dự án hiện tại, tôi khuyến nghị kiểm tra lại các task đang ở trạng thái “Đang xem xét” trước. Bạn có muốn tôi phân tích chi tiết hơn không?`,
+        text: "Vui lòng chọn task có lỗi từ danh sách bên dưới rồi bấm **Phân tích lỗi** để tôi đọc lịch sử code và gợi ý sửa.",
       });
+      return;
+    }
+
+    // Gọi Gemini thực sự với context dự án (tiết kiệm token tối đa)
+    setTyping(true);
+    try {
+      const aiText = await askGemini(text, chatHistory.current, { tasks, team });
+      chatHistory.current = [
+        ...chatHistory.current.slice(-6),
+        { role: "user",  text },
+        { role: "model", text: aiText },
+      ];
+      setTyping(false);
+      setMessages((p) => [...p, { from: "ai", type: "text", text: aiText }]);
+    } catch (err) {
+      setTyping(false);
+      setMessages((p) => [
+        ...p,
+        { from: "ai", type: "text", text: `❌ Lỗi kết nối Gemini: ${err.message}` },
+      ]);
     }
   };
+
 
   /* ── Render message ── */
   const renderMsg = (m, i) => {
@@ -1434,6 +1471,409 @@ function TabPlaceholder({ label }) {
 }
 
 /* ═══════════════════════════════════════
+   MEMBERS TAB
+═══════════════════════════════════════ */
+function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
+  const [emailQuery, setEmailQuery] = useState("");
+  const [results,    setResults]    = useState([]);
+  const [searching,  setSearching]  = useState(false);
+  const [searchDone, setSearchDone] = useState(false); // đã search xong chưa
+  const [apiError,   setApiError]   = useState(false); // backend chưa chạy?
+  const [showDrop,   setShowDrop]   = useState(false);
+  const [inviting,   setInviting]   = useState(null);
+  const [removing,   setRemoving]   = useState(null);
+  const [toast,      setToast]      = useState(null);
+  const debRef  = useRef(null);
+  const dropRef = useRef(null);
+
+  /* Show toast */
+  const showToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3200);
+  };
+
+  /* Debounce search */
+  useEffect(() => {
+    if (debRef.current) clearTimeout(debRef.current);
+
+    if (emailQuery.trim().length < 2) {
+      setResults([]);
+      setShowDrop(false);
+      setSearchDone(false);
+      setApiError(false);
+      return;
+    }
+
+    debRef.current = setTimeout(async () => {
+      setSearching(true);
+      setApiError(false);
+      try {
+        const { default: apiClient } = await import("../services/api");
+        const res = await apiClient.get("/users/search", {
+          params: { email: emailQuery.trim(), size: 5 },
+        });
+        const data = res.data?.data ?? [];
+        // Loại bỏ những người đã là thành viên
+        const filtered = data.filter(
+          (u) => !team.some((m) => String(m.id) === String(u.id))
+        );
+        setResults(filtered);
+        setShowDrop(true); // luôn show — kể cả khi rỗng (hiển "không tìm thấy")
+      } catch {
+        setResults([]);
+        setApiError(true);
+        setShowDrop(true);
+      } finally {
+        setSearching(false);
+        setSearchDone(true);
+      }
+    }, 400);
+
+    return () => clearTimeout(debRef.current);
+  }, [emailQuery, team]);
+
+
+  /* Click ngoài đóng dropdown */
+  useEffect(() => {
+    const h = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setShowDrop(false); };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  /* Mời thành viên */
+  const handleInvite = async (user) => {
+    setInviting(user.email);
+    try {
+      const { default: apiClient } = await import("../services/api");
+      await apiClient.post(`/projects/${projectId}/members`, { email: user.email });
+      const newMember = { id: String(user.id), name: user.fullName || user.username, email: user.email };
+      const updated = [...team, newMember];
+      setTeam(updated);
+      localStorage.setItem("team", JSON.stringify(updated));
+      setEmailQuery(""); setResults([]); setShowDrop(false);
+      showToast(`Đã mời ${user.fullName || user.username} vào dự án!`);
+    } catch (err) {
+      showToast(err.response?.data?.message || "Mời thất bại. Vui lòng thử lại.", "error");
+    } finally { setInviting(null); }
+  };
+
+  /* Xóa thành viên */
+  const handleRemove = async (member) => {
+    if (!window.confirm(`Xóa ${member.name} khỏi dự án?`)) return;
+    setRemoving(member.id);
+    try {
+      const { default: apiClient } = await import("../services/api");
+      await apiClient.delete(`/projects/${projectId}/members/${member.id}`);
+      const updated = team.filter((m) => m.id !== member.id);
+      setTeam(updated);
+      localStorage.setItem("team", JSON.stringify(updated));
+      showToast(`Đã xóa ${member.name} khỏi dự án.`);
+    } catch (err) {
+      showToast(err.response?.data?.message || "Xóa thất bại.", "error");
+    } finally { setRemoving(null); }
+  };
+
+  /* Avatar màu */
+  const avatarColor = (name) => {
+    const colors = ["bg-blue-600","bg-purple-600","bg-green-600","bg-orange-500","bg-pink-600","bg-teal-600"];
+    return colors[(name?.charCodeAt(0) || 0) % colors.length];
+  };
+
+  /* Tính stats từng thành viên */
+  const memberStats = team.map((m) => {
+    const myTasks = tasks.filter((t) => t.assignee?.id === m.id);
+    const done    = myTasks.filter((t) => t.status === "done").length;
+    const total   = myTasks.length;
+    const inProgress = myTasks.filter((t) => t.status === "doing").length;
+    const overdue    = myTasks.filter(isOverdue).length;
+    const bugs       = myTasks.reduce((s, t) => s + (t.bugCount || 0), 0);
+    const pct        = total > 0 ? Math.round((done / total) * 100) : 0;
+    const barColor   = pct >= 80 ? "bg-green-500" : pct >= 40 ? "bg-blue-500" : "bg-yellow-500";
+    return { ...m, myTasks, done, total, inProgress, overdue, bugs, pct, barColor };
+  });
+
+  /* Summary stats */
+  const totalMembers  = team.length;
+  const totalDone     = memberStats.reduce((s, m) => s + m.done, 0);
+  const totalTasks    = memberStats.reduce((s, m) => s + m.total, 0);
+  const avgProgress   = totalTasks > 0 ? Math.round((totalDone / totalTasks) * 100) : 0;
+
+  return (
+    <div className="space-y-6 relative">
+
+      {/* TOAST */}
+      {toast && (
+        <div className={`fixed top-6 right-6 z-[300] px-5 py-3 rounded-2xl text-sm font-medium shadow-2xl animate-fadeIn flex items-center gap-2 ${
+          toast.type === "error"
+            ? "bg-red-900 border border-red-700 text-red-200"
+            : "bg-green-900 border border-green-700 text-green-200"
+        }`}>
+          {toast.type === "error" ? "✗" : "✓"} {toast.msg}
+        </div>
+      )}
+
+      {/* HEADER */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-bold text-white">Thành Viên Dự Án</h2>
+          <p className="text-sm text-gray-400 mt-0.5">
+            {totalMembers} thành viên · {avgProgress}% tiến độ trung bình
+          </p>
+        </div>
+      </div>
+
+      {/* SUMMARY CARDS */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: "Tổng thành viên",  val: totalMembers,  color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
+          { label: "Tasks đã hoàn thành", val: `${totalDone}/${totalTasks}`, color: "text-green-400",  border: "border-green-800/40",  bg: "bg-green-900/10" },
+          { label: "Tiến độ TB",       val: `${avgProgress}%`, color: "text-purple-400", border: "border-purple-800/40", bg: "bg-purple-900/10" },
+          { label: "Trễ hạn",          val: memberStats.reduce((s,m)=>s+m.overdue,0), color: "text-red-400", border: "border-red-800/40", bg: "bg-red-900/10" },
+        ].map((c) => (
+          <div key={c.label} className={`p-4 border ${c.border} ${c.bg} rounded-2xl`}>
+            <p className={`text-2xl font-black tabular-nums ${c.color}`}>{c.val}</p>
+            <p className="text-xs text-gray-500 mt-1">{c.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* INVITE — chỉ owner thấy */}
+      {isOwner && (
+        <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+            <span className="text-blue-400 text-lg">＋</span>
+            Mời Thành Viên Mới
+          </h3>
+
+          <div className="relative" ref={dropRef}>
+            {/* Search input */}
+            <div className="relative">
+              <svg
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
+                fill="none" stroke="currentColor" viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                  d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+              <input
+                value={emailQuery}
+                onChange={(e) => { setEmailQuery(e.target.value); }}
+                onFocus={() => emailQuery.trim().length >= 2 && setShowDrop(true)}
+                placeholder="Nhập email để tìm kiếm thành viên..."
+                className="w-full pl-10 pr-10 py-3 bg-black border border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-white placeholder-gray-500 transition"
+              />
+              {/* Spinner */}
+              {searching && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+              )}
+              {/* Clear button */}
+              {!searching && emailQuery && (
+                <button
+                  onClick={() => { setEmailQuery(""); setShowDrop(false); setResults([]); setSearchDone(false); }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-lg leading-none transition"
+                >
+                  ×
+                </button>
+              )}
+            </div>
+
+            {/* DROPDOWN KET QUA */}
+            {showDrop && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d1120] border border-gray-700/80 rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
+
+                {/* Loi API */}
+                {apiError && (
+                  <div className="flex items-start gap-3 px-5 py-4">
+                    <span className="text-xl mt-0.5">⚠️</span>
+                    <div>
+                      <p className="text-sm font-medium text-yellow-400">Không kết nối được tới server</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Vui lòng khởi động Spring Boot rồi thử lại.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Khong tim thay */}
+                {!apiError && searchDone && results.length === 0 && (
+                  <div className="flex items-center gap-3 px-5 py-4">
+                    <span className="text-xl">🔍</span>
+                    <div>
+                      <p className="text-sm text-gray-300">
+                        Không tìm thấy người dùng với email{" "}
+                        <span className="text-white font-medium">&ldquo;{emailQuery}&rdquo;</span>
+                      </p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        Kiểm tra lại email hoặc người dùng chưa đăng ký tài khoản.
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Co ket qua */}
+                {!apiError && results.length > 0 && results.map((u, idx) => (
+                  <div
+                    key={u.id}
+                    className={`flex items-center gap-4 px-4 py-3.5 hover:bg-blue-600/10 transition ${
+                      idx < results.length - 1 ? "border-b border-gray-800/70" : ""
+                    }`}
+                  >
+                    {/* Avatar */}
+                    <div
+                      className={`w-11 h-11 rounded-full ${avatarColor(u.fullName || u.username)}
+                        flex items-center justify-center text-base font-bold text-white flex-shrink-0
+                        shadow-lg ring-2 ring-black`}
+                    >
+                      {(u.fullName || u.username)?.charAt(0)?.toUpperCase()}
+                    </div>
+
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-white truncate">
+                        {u.fullName || u.username}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                    </div>
+
+                    {/* Nut + them thanh vien */}
+                    <button
+                      onClick={() => handleInvite(u)}
+                      disabled={inviting === u.email}
+                      title="Thêm vào nhóm"
+                      className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center
+                        font-bold text-lg transition-all shadow-md
+                        ${
+                          inviting === u.email
+                            ? "bg-gray-700 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-500 hover:scale-110 active:scale-95 text-white"
+                        }`}
+                    >
+                      {inviting === u.email ? (
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <span className="leading-none">＋</span>
+                      )}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MEMBERS GRID */}
+      {team.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3">
+          <div className="text-5xl opacity-20">👥</div>
+          <p className="text-gray-500 font-medium">Chưa có thành viên nào trong dự án</p>
+          {isOwner && <p className="text-sm">Sử dụng ô tìm kiếm phía trên để mời thành viên</p>}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+          {memberStats.map((m) => (
+            <div
+              key={m.id}
+              className="bg-[#0b0f1a] border border-gray-800 hover:border-blue-500/50 rounded-2xl p-5 transition-all"
+            >
+              {/* Avatar + tên + badge */}
+              <div className="flex items-start gap-3 mb-4">
+                <div className={`w-11 h-11 rounded-full ${avatarColor(m.name)} flex items-center justify-center text-base font-bold text-white flex-shrink-0`}>
+                  {m.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-semibold text-white truncate">{m.name}</h3>
+                    {m.overdue > 0 && (
+                      <span className="text-[10px] px-2 py-0.5 bg-red-900/40 border border-red-700/50 text-red-400 rounded-full font-semibold">
+                        {m.overdue} trễ hạn
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-gray-400 truncate mt-0.5">{m.email || ""}</p>
+                </div>
+
+                {/* Nút xóa — chỉ owner */}
+                {isOwner && (
+                  <button
+                    onClick={() => handleRemove(m)}
+                    disabled={removing === m.id}
+                    className="flex-shrink-0 p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition"
+                    title="Xóa thành viên"
+                  >
+                    {removing === m.id ? (
+                      <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </button>
+                )}
+              </div>
+
+              {/* Progress bar */}
+              <div className="mb-4">
+                <div className="flex justify-between text-xs mb-1.5">
+                  <span className="text-gray-400">Tiến độ</span>
+                  <span className={`font-bold ${
+                    m.pct >= 80 ? "text-green-400" : m.pct >= 40 ? "text-blue-400" : "text-yellow-400"
+                  }`}>{m.pct}%</span>
+                </div>
+                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-700 ${m.barColor}`}
+                    style={{ width: `${Math.max(m.pct, m.total > 0 ? 3 : 0)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Stats grid */}
+              <div className="grid grid-cols-4 gap-2 text-center">
+                {[
+                  { val: m.total,      label: "Tổng",    color: "text-gray-300" },
+                  { val: m.done,       label: "Xong",    color: "text-green-400" },
+                  { val: m.inProgress, label: "Đang làm", color: "text-blue-400" },
+                  { val: m.bugs,       label: "Lỗi",     color: m.bugs > 0 ? "text-red-400" : "text-gray-600" },
+                ].map((s) => (
+                  <div key={s.label} className="bg-black/40 rounded-xl py-2">
+                    <p className={`text-base font-bold ${s.color}`}>{s.val}</p>
+                    <p className="text-[10px] text-gray-600">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Task list (nếu có) */}
+              {m.myTasks.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-gray-800">
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Công việc đang phụ trách</p>
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
+                    {m.myTasks.map((t) => (
+                      <div key={t.id} className="flex items-center gap-2">
+                        <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          t.status === "done"   ? "bg-green-500" :
+                          t.status === "doing"  ? "bg-blue-500"  :
+                          t.status === "review" ? "bg-yellow-500" : "bg-gray-600"
+                        }`} />
+                        <span className={`text-xs truncate flex-1 ${
+                          isOverdue(t) ? "text-red-400" : "text-gray-400"
+                        }`}>{t.name}</span>
+                        {t.status === "done" && <span className="text-[10px] text-green-500 flex-shrink-0">✓</span>}
+                        {isOverdue(t)       && <span className="text-[10px] text-red-400 flex-shrink-0">⚠</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════
    MAIN
 ═══════════════════════════════════════ */
 export default function ProjectDetailPage() {
@@ -1448,6 +1888,9 @@ export default function ProjectDetailPage() {
   const [tasks, setTasks] = useState([]);
   const [team, setTeam] = useState([]);
   const [activeId, setActiveId] = useState(null);
+
+  const currentUser = useAuthStore((s) => s.user);
+  const isLeader = currentUser?.role === "PROJECT_MANAGER" || currentUser?.role === "ADMIN";
 
   /* Modal tạo/sửa task */
   const [modal, setModal] = useState(false);
@@ -1510,15 +1953,33 @@ export default function ProjectDetailPage() {
     const bugVal   = formBugCount !== "" ? Math.max(0, parseInt(formBugCount) || 0) : 0;
     const assigneeObj = team.find((m) => m.id === formAssignee) || null;
 
+    const notifyAssignee = (taskName, assignee) => {
+      if (!assignee || !currentUser || !isLeader) return;
+      const notifyKey = `sys_notifs_${String(assignee.id)}`;
+      const existing = JSON.parse(localStorage.getItem(notifyKey) || "[]");
+      existing.unshift({
+        id: `task-assigned-${taskName}-${Date.now()}`,
+        type: "task_assigned",
+        title: "Bạn vừa được giao việc",
+        message: `${currentUser.fullName || currentUser.username} đã giao cho bạn công việc "${taskName}".`,
+        createdAt: Date.now(),
+      });
+      localStorage.setItem(notifyKey, JSON.stringify(existing));
+    };
+
     let updated;
     if (editTask?.id) {
+      const oldTask = tasks.find((t) => t.id === editTask.id);
       updated = tasks.map((t) =>
         t.id === editTask.id
           ? { ...t, name: formName, assignee: assigneeObj, score: scoreVal, bugCount: bugVal, deadline: formDeadline || null }
           : t
       );
+      if (assigneeObj && oldTask?.assignee?.id !== assigneeObj.id) {
+        notifyAssignee(formName, assigneeObj);
+      }
     } else {
-      updated = [...tasks, {
+      const newTask = {
         id: Date.now().toString(),
         name: formName,
         status: editTask.status,
@@ -1526,7 +1987,11 @@ export default function ProjectDetailPage() {
         score: scoreVal,
         bugCount: bugVal,
         deadline: formDeadline || null,
-      }];
+      };
+      updated = [...tasks, newTask];
+      if (assigneeObj) {
+        notifyAssignee(formName, assigneeObj);
+      }
     }
     saveTasks(updated);
     setModal(false);
@@ -1534,9 +1999,29 @@ export default function ProjectDetailPage() {
 
   const deleteTask = (task) => saveTasks(tasks.filter((t) => t.id !== task.id));
 
-  const changeAssignee = (task, member) => saveTasks(tasks.map((t) =>
-    t.id === task.id ? { ...t, assignee: t.assignee?.id === member.id ? null : member } : t
-  ));
+  const changeAssignee = (task, member) => {
+    const updated = tasks.map((t) =>
+      t.id === task.id
+        ? { ...t, assignee: t.assignee?.id === member.id ? null : member }
+        : t
+    );
+    saveTasks(updated);
+
+    if (!currentUser || !isLeader) return;
+    const newAssignee = task.assignee?.id === member.id ? null : member;
+    if (newAssignee) {
+      const notifyKey = `sys_notifs_${String(newAssignee.id)}`;
+      const existing = JSON.parse(localStorage.getItem(notifyKey) || "[]");
+      existing.unshift({
+        id: `task-assigned-${task.id}-${Date.now()}`,
+        type: "task_assigned",
+        title: "Bạn vừa được giao việc",
+        message: `${currentUser.fullName || currentUser.username} đã giao cho bạn công việc "${task.name}".`,
+        createdAt: Date.now(),
+      });
+      localStorage.setItem(notifyKey, JSON.stringify(existing));
+    }
+  };
 
   const changeScore = (task, val) => saveTasks(tasks.map((t) => t.id === task.id ? { ...t, score: val } : t));
 
@@ -1624,6 +2109,16 @@ export default function ProjectDetailPage() {
 
         {activeTab === "report" && (
           <ReportTab tasks={tasks} team={team} projectName={projectName} />
+        )}
+
+        {activeTab === "members" && (
+          <MembersTab
+            tasks={tasks}
+            team={team}
+            setTeam={setTeam}
+            projectId={id}
+            isOwner={true}
+          />
         )}
 
         {activeTab === "kanban" && (

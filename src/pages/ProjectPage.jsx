@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
-import { FiX, FiLoader, FiAlertCircle } from "react-icons/fi";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { FiX, FiLoader, FiAlertCircle, FiSearch, FiUserPlus, FiUser } from "react-icons/fi";
 import ProjectCard from "../components/ProjectCard";
 import apiClient from "../services/api";
 import { ENDPOINTS } from "../services/endpoints";
 import useAuthStore from "../store/authStore";
+import memberService from "../features/projects/services/memberService";
 
 /* ─────────────────────────────────────────────
    Hằng số lựa chọn
@@ -22,6 +23,23 @@ const SDLC_OPTIONS = [
 ];
 
 /* ─────────────────────────────────────────────
+   Avatar chữ cái đầu
+──────────────────────────────────────────────── */
+function Avatar({ name, size = "sm" }) {
+  const colors = [
+    "bg-blue-600", "bg-purple-600", "bg-green-600",
+    "bg-orange-500", "bg-pink-600", "bg-teal-600",
+  ];
+  const color = colors[(name?.charCodeAt(0) || 0) % colors.length];
+  const dim = size === "sm" ? "w-7 h-7 text-xs" : "w-9 h-9 text-sm";
+  return (
+    <div className={`${dim} ${color} rounded-full flex items-center justify-center font-semibold text-white flex-shrink-0`}>
+      {name?.charAt(0)?.toUpperCase() || "?"}
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────
    MODAL TẠO DỰ ÁN
 ──────────────────────────────────────────────── */
 function CreateProjectModal({ onClose, onCreate }) {
@@ -29,6 +47,7 @@ function CreateProjectModal({ onClose, onCreate }) {
 
   const [form, setForm] = useState({
     name:        "",
+    projectCode: "",
     description: "",
     sdlc:        "AGILE",
     priority:    "MEDIUM",
@@ -39,42 +58,194 @@ function CreateProjectModal({ onClose, onCreate }) {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
+  /* ── Mời thành viên ── */
+  const [emailQuery,      setEmailQuery]      = useState("");
+  const [searchResults,   setSearchResults]   = useState([]);
+  const [searchLoading,   setSearchLoading]   = useState(false);
+  const [invitedMembers,  setInvitedMembers]  = useState([]);
+  const [showDropdown,    setShowDropdown]    = useState(false);
+  const debounceRef = useRef(null);
+  const dropdownRef = useRef(null);
+
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
 
+  /* Debounce search */
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (emailQuery.trim().length < 2) {
+      setSearchResults([]);
+      setShowDropdown(false);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setSearchLoading(true);
+      try {
+        const results = await memberService.searchUsers(emailQuery);
+        // Lọc những người đã được mời rồi
+        const filtered = results.filter(
+          (u) => !invitedMembers.some((inv) => inv.id === u.id)
+        );
+        setSearchResults(filtered);
+        setShowDropdown(filtered.length > 0);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearchLoading(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [emailQuery, invitedMembers]);
+
+  /* Đóng dropdown khi click ra ngoài */
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleInvite = (member) => {
+    setInvitedMembers((prev) => [...prev, member]);
+    setEmailQuery("");
+    setSearchResults([]);
+    setShowDropdown(false);
+  };
+
+  const handleRemoveInvited = (memberId) => {
+    setInvitedMembers((prev) => prev.filter((m) => m.id !== memberId));
+  };
+
+  /* Submit tạo dự án */
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!form.name.trim()) {
+    console.log("Form state:", form);
+
+    const trimmedName = form.name.trim();
+    const trimmedProjectCode = form.projectCode.trim();
+    const trimmedDescription = form.description.trim();
+
+    if (!trimmedName) {
       setError("Tên dự án không được để trống.");
+      console.log("Validation failed: name is empty");
       return;
     }
+
+    if (trimmedName.length < 3 || trimmedName.length > 200) {
+      setError("Tên dự án phải từ 3-200 ký tự.");
+      console.log("Validation failed: name length invalid", trimmedName.length);
+      return;
+    }
+
+    if (trimmedProjectCode.length > 50) {
+      setError("Mã dự án không được vượt quá 50 ký tự.");
+      console.log("Validation failed: projectCode too long", trimmedProjectCode.length);
+      return;
+    }
+
+    if (trimmedDescription.length > 5000) {
+      setError("Mô tả không được vượt quá 5000 ký tự.");
+      console.log("Validation failed: description too long", trimmedDescription.length);
+      return;
+    }
+
     if (!form.deadline) {
       setError("Vui lòng chọn ngày kết thúc.");
+      console.log("Validation failed: deadline is empty");
       return;
     }
     if (form.deadline <= form.startDate) {
       setError("Ngày kết thúc phải sau ngày bắt đầu.");
+      console.log("Validation failed: deadline <= startDate");
       return;
     }
 
+    console.log("Validation passed, calling API...");
     setLoading(true);
     try {
       const payload = {
-        name:        form.name.trim(),
-        description: form.description.trim() || null,
+        name:        trimmedName,
+        projectCode: trimmedProjectCode || null,
+        description: trimmedDescription || null,
         priority:    form.priority,
         startDate:   form.startDate,
         deadline:    form.deadline,
       };
 
+      console.log("Payload:", payload);
       const res = await apiClient.post(ENDPOINTS.PROJECTS.CREATE, payload);
+      console.log("API response:", res);
       const created = res.data?.data;
+      const backendError = res.data?.success === false ? res.data?.message : null;
+      if (backendError) {
+        throw new Error(backendError);
+      }
+
+      /* Mời từng thành viên sau khi tạo project thành công */
+      if (invitedMembers.length > 0 && created?.id) {
+        await Promise.allSettled(
+          invitedMembers.map((m) =>
+            memberService.addMember(created.id, m.email)
+          )
+        );
+
+        /* ── Ghi lời mời pending vào localStorage (invitee thấy trong Hòm thư) ── */
+        const existingInvites = JSON.parse(localStorage.getItem("invitations") || "[]");
+        const newInvites = invitedMembers.map((m) => ({
+          id: `invite-${created.id}-${m.id || m.email}-${Date.now()}`,
+          projectName: created.name || form.name.trim(),
+          inviterName: user?.fullName || user?.username || "Trưởng nhóm",
+          inviterId:   user?.id,
+          inviteeEmail: m.email,
+          inviteeId:   m.id,
+          role: "Thành viên",
+          status: "pending",
+          createdAt: Date.now(),
+          projectData: {
+            id:          created.id,
+            name:        created.name || form.name.trim(),
+            description: payload.description,
+            priority:    payload.priority,
+            startDate:   payload.startDate,
+            deadline:    payload.deadline,
+            members: [
+              {
+                id:    user?.id,
+                name:  user?.fullName || user?.username,
+                email: user?.email,
+              },
+            ],
+          },
+        }));
+        localStorage.setItem("invitations", JSON.stringify([...existingInvites, ...newInvites]));
+
+        // Phát sự kiện để Header cập nhật badge ngay lập tức
+        window.dispatchEvent(new CustomEvent("storage-update"));
+      }
+
       onCreate(created);
       onClose();
     } catch (err) {
-      const msg = err.response?.data?.message || "Tạo dự án thất bại. Vui lòng thử lại.";
-      setError(msg);
+      console.error("Error creating project:", err);
+      console.error("Error details:", err.response?.data);
+
+      const responseData = err.response?.data;
+      const validationErrors = responseData?.data;
+      const backendMessage = responseData?.message;
+
+      if (validationErrors && typeof validationErrors === 'object') {
+        const firstError = Object.values(validationErrors)[0];
+        setError(firstError || backendMessage || "Tạo dự án thất bại. Vui lòng thử lại.");
+      } else {
+        setError(backendMessage || err.message || "Tạo dự án thất bại. Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }
@@ -82,10 +253,10 @@ function CreateProjectModal({ onClose, onCreate }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0b0f1a] border border-gray-700 rounded-2xl w-full max-w-xl shadow-2xl animate-fadeIn">
+      <div className="bg-[#0b0f1a] border border-gray-700 rounded-2xl w-full max-w-xl shadow-2xl animate-fadeIn max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 sticky top-0 bg-[#0b0f1a] z-10">
           <div>
             <h2 className="text-lg font-bold text-white">Tạo Dự Án Mới</h2>
             <p className="text-xs text-gray-400 mt-0.5">
@@ -126,6 +297,19 @@ function CreateProjectModal({ onClose, onCreate }) {
                   value={form.name}
                   onChange={(e) => set("name", e.target.value)}
                   placeholder="Nhập tên dự án..."
+                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
+                />
+              </div>
+
+              {/* Mã dự án */}
+              <div>
+                <label className="text-sm text-gray-300 block mb-1">
+                  Mã Dự Án
+                </label>
+                <input
+                  value={form.projectCode}
+                  onChange={(e) => set("projectCode", e.target.value)}
+                  placeholder="Nhập mã dự án (ví dụ: ABC-123)"
                   className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
                 />
               </div>
@@ -181,7 +365,7 @@ function CreateProjectModal({ onClose, onCreate }) {
                 />
               </div>
 
-              {/* Ngày kết thúc — chọn lịch */}
+              {/* Ngày kết thúc */}
               <div>
                 <label className="text-sm text-gray-300 block mb-1">
                   Ngày Kết Thúc <span className="text-red-400">*</span>
@@ -219,6 +403,90 @@ function CreateProjectModal({ onClose, onCreate }) {
             </div>
           </section>
 
+          {/* ── MỜI THÀNH VIÊN ── */}
+          <section>
+            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+              <FiUserPlus className="text-blue-400" />
+              Mời Thành Viên
+              <span className="text-gray-600 font-normal normal-case">(tuỳ chọn)</span>
+            </h3>
+
+            {/* Search input */}
+            <div className="relative" ref={dropdownRef}>
+              <div className="relative">
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm" />
+                <input
+                  value={emailQuery}
+                  onChange={(e) => setEmailQuery(e.target.value)}
+                  onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
+                  placeholder="Nhập email để tìm kiếm thành viên..."
+                  className="w-full pl-9 pr-4 p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
+                />
+                {searchLoading && (
+                  <FiLoader className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 animate-spin" />
+                )}
+              </div>
+
+              {/* Dropdown kết quả */}
+              {showDropdown && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-[#0f1422] border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                  {searchResults.map((u) => (
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-600/10 transition cursor-pointer border-b border-gray-800 last:border-0"
+                    >
+                      <Avatar name={u.fullName || u.username} />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">
+                          {u.fullName || u.username}
+                        </p>
+                        <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleInvite(u)}
+                        className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-medium rounded-lg transition"
+                      >
+                        <FiUserPlus className="text-xs" />
+                        Mời
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Danh sách đã mời */}
+            {invitedMembers.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-gray-500">
+                  Đã chọn {invitedMembers.length} thành viên:
+                </p>
+                {invitedMembers.map((m) => (
+                  <div
+                    key={m.id}
+                    className="flex items-center gap-3 px-3 py-2 bg-blue-600/10 border border-blue-500/30 rounded-lg"
+                  >
+                    <Avatar name={m.fullName || m.username} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">
+                        {m.fullName || m.username}
+                      </p>
+                      <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveInvited(m.id)}
+                      className="text-gray-500 hover:text-red-400 transition p-1 rounded"
+                    >
+                      <FiX />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
           {/* ── NGƯỜI TẠO ── */}
           <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 rounded-lg border border-gray-800">
             <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
@@ -251,7 +519,14 @@ function CreateProjectModal({ onClose, onCreate }) {
                   Đang tạo...
                 </>
               ) : (
-                "Tạo Dự Án"
+                <>
+                  Tạo Dự Án
+                  {invitedMembers.length > 0 && (
+                    <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded-full">
+                      +{invitedMembers.length}
+                    </span>
+                  )}
+                </>
               )}
             </button>
           </div>
