@@ -88,11 +88,16 @@ export async function askGemini(userMessage, history = [], context = {}) {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       const msg = err?.error?.message || res.statusText;
+      // Hết quota free tier
+      if (res.status === 429) {
+        const retryAfter = err?.error?.details?.find(d => d?.retryDelay)?.retryDelay || "";
+        return `⏳ Gemini API đã vượt giới hạn quota miễn phí (429).\n\nCách khắc phục:\n1. Lấy API key mới tại https://aistudio.google.com/apikey\n2. Cập nhật VITE_GEMINI_API_KEY trong file .env.local\n3. Restart dev server${retryAfter ? `\n\nHoặc thử lại sau: ${retryAfter}` : ""}`;
+      }
       // API key lỗi format → gợi ý
       if (res.status === 400 || res.status === 401 || res.status === 403) {
         return `❌ API key không hợp lệ (${res.status}). Vui lòng lấy key mới tại https://aistudio.google.com/apikey`;
       }
-      return `❌ Lỗi Gemini API: ${msg}`;
+      return `❌ Lỗi Gemini API (${res.status}): ${msg}`;
     }
 
     const data = await res.json();

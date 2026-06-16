@@ -47,6 +47,7 @@ function CreateProjectModal({ onClose, onCreate }) {
 
   const [form, setForm] = useState({
     name:        "",
+    projectCode: "",
     description: "",
     sdlc:        "AGILE",
     priority:    "MEDIUM",
@@ -125,31 +126,67 @@ function CreateProjectModal({ onClose, onCreate }) {
     e.preventDefault();
     setError("");
 
-    if (!form.name.trim()) {
+    console.log("Form state:", form);
+
+    const trimmedName = form.name.trim();
+    const trimmedProjectCode = form.projectCode.trim();
+    const trimmedDescription = form.description.trim();
+
+    if (!trimmedName) {
       setError("Tên dự án không được để trống.");
+      console.log("Validation failed: name is empty");
       return;
     }
+
+    if (trimmedName.length < 3 || trimmedName.length > 200) {
+      setError("Tên dự án phải từ 3-200 ký tự.");
+      console.log("Validation failed: name length invalid", trimmedName.length);
+      return;
+    }
+
+    if (trimmedProjectCode.length > 50) {
+      setError("Mã dự án không được vượt quá 50 ký tự.");
+      console.log("Validation failed: projectCode too long", trimmedProjectCode.length);
+      return;
+    }
+
+    if (trimmedDescription.length > 5000) {
+      setError("Mô tả không được vượt quá 5000 ký tự.");
+      console.log("Validation failed: description too long", trimmedDescription.length);
+      return;
+    }
+
     if (!form.deadline) {
       setError("Vui lòng chọn ngày kết thúc.");
+      console.log("Validation failed: deadline is empty");
       return;
     }
     if (form.deadline <= form.startDate) {
       setError("Ngày kết thúc phải sau ngày bắt đầu.");
+      console.log("Validation failed: deadline <= startDate");
       return;
     }
 
+    console.log("Validation passed, calling API...");
     setLoading(true);
     try {
       const payload = {
-        name:        form.name.trim(),
-        description: form.description.trim() || null,
+        name:        trimmedName,
+        projectCode: trimmedProjectCode || null,
+        description: trimmedDescription || null,
         priority:    form.priority,
         startDate:   form.startDate,
         deadline:    form.deadline,
       };
 
+      console.log("Payload:", payload);
       const res = await apiClient.post(ENDPOINTS.PROJECTS.CREATE, payload);
+      console.log("API response:", res);
       const created = res.data?.data;
+      const backendError = res.data?.success === false ? res.data?.message : null;
+      if (backendError) {
+        throw new Error(backendError);
+      }
 
       /* Mời từng thành viên sau khi tạo project thành công */
       if (invitedMembers.length > 0 && created?.id) {
@@ -158,13 +195,57 @@ function CreateProjectModal({ onClose, onCreate }) {
             memberService.addMember(created.id, m.email)
           )
         );
+
+        /* ── Ghi lời mời pending vào localStorage (invitee thấy trong Hòm thư) ── */
+        const existingInvites = JSON.parse(localStorage.getItem("invitations") || "[]");
+        const newInvites = invitedMembers.map((m) => ({
+          id: `invite-${created.id}-${m.id || m.email}-${Date.now()}`,
+          projectName: created.name || form.name.trim(),
+          inviterName: user?.fullName || user?.username || "Trưởng nhóm",
+          inviterId:   user?.id,
+          inviteeEmail: m.email,
+          inviteeId:   m.id,
+          role: "Thành viên",
+          status: "pending",
+          createdAt: Date.now(),
+          projectData: {
+            id:          created.id,
+            name:        created.name || form.name.trim(),
+            description: payload.description,
+            priority:    payload.priority,
+            startDate:   payload.startDate,
+            deadline:    payload.deadline,
+            members: [
+              {
+                id:    user?.id,
+                name:  user?.fullName || user?.username,
+                email: user?.email,
+              },
+            ],
+          },
+        }));
+        localStorage.setItem("invitations", JSON.stringify([...existingInvites, ...newInvites]));
+
+        // Phát sự kiện để Header cập nhật badge ngay lập tức
+        window.dispatchEvent(new CustomEvent("storage-update"));
       }
 
       onCreate(created);
       onClose();
     } catch (err) {
-      const msg = err.response?.data?.message || "Tạo dự án thất bại. Vui lòng thử lại.";
-      setError(msg);
+      console.error("Error creating project:", err);
+      console.error("Error details:", err.response?.data);
+
+      const responseData = err.response?.data;
+      const validationErrors = responseData?.data;
+      const backendMessage = responseData?.message;
+
+      if (validationErrors && typeof validationErrors === 'object') {
+        const firstError = Object.values(validationErrors)[0];
+        setError(firstError || backendMessage || "Tạo dự án thất bại. Vui lòng thử lại.");
+      } else {
+        setError(backendMessage || err.message || "Tạo dự án thất bại. Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }
@@ -216,6 +297,19 @@ function CreateProjectModal({ onClose, onCreate }) {
                   value={form.name}
                   onChange={(e) => set("name", e.target.value)}
                   placeholder="Nhập tên dự án..."
+                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
+                />
+              </div>
+
+              {/* Mã dự án */}
+              <div>
+                <label className="text-sm text-gray-300 block mb-1">
+                  Mã Dự Án
+                </label>
+                <input
+                  value={form.projectCode}
+                  onChange={(e) => set("projectCode", e.target.value)}
+                  placeholder="Nhập mã dự án (ví dụ: ABC-123)"
                   className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
                 />
               </div>

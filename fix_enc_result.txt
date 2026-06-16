@@ -1,0 +1,7 @@
+﻿python3 : Python t́m th
+At line:1 char:1
++ python3 fix_encoding.py 2>&1 | Out-File -Encoding utf8 fix_enc_result ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Python t́m th:String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 

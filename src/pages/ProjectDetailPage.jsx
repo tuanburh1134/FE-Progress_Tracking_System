@@ -15,20 +15,21 @@ import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
+import useAuthStore from "../store/authStore";
 
-/* â”€â”€â”€ helpers â”€â”€â”€ */
+/* ─── helpers ─── */
 const isOverdue = (task) => {
   if (!task.deadline || task.status === "done") return false;
   const today = new Date().toISOString().split("T")[0];
   return task.deadline <= today;
 };
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   CHATBOT WIDGET (gÃ³c pháº£i mÃ n hÃ¬nh)
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══════════════════════════════════════
+   CHATBOT WIDGET (góc phải màn hình)
+═══════════════════════════════════════ */
 function ChatbotWidget({ open, onClose, initialQuestion }) {
   const [messages, setMessages] = useState([
-    { from: "ai", text: "Xin chÃ o! TÃ´i lÃ  Trá»£ lÃ½ AI. TÃ´i cÃ³ thá»ƒ giÃºp gÃ¬ cho báº¡n?" },
+    { from: "ai", text: "Xin chào! Tôi là Trợ lý AI. Tôi có thể giúp gì cho bạn?" },
   ]);
   const [input, setInput] = useState("");
   const [typing, setTyping] = useState(false);
@@ -37,7 +38,7 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
   useEffect(() => {
     if (initialQuestion) {
       setMessages([
-        { from: "ai", text: "Xin chÃ o! TÃ´i lÃ  Trá»£ lÃ½ AI. TÃ´i cÃ³ thá»ƒ giÃºp gÃ¬ cho báº¡n?" },
+        { from: "ai", text: "Xin chào! Tôi là Trợ lý AI. Tôi có thể giúp gì cho bạn?" },
         { from: "user", text: initialQuestion },
       ]);
       simulateReply(initialQuestion);
@@ -54,7 +55,7 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
       setTyping(false);
       setMessages((prev) => [...prev, {
         from: "ai",
-        text: `TÃ´i Ä‘Ã£ ghi nháº­n váº¥n Ä‘á»: "${q}". Dá»±a trÃªn dá»¯ liá»‡u dá»± Ã¡n, tÃ´i gá»£i Ã½ báº¡n kiá»ƒm tra láº¡i logic xá»­ lÃ½ vÃ  xem xÃ©t tÃ¡i cáº¥u trÃºc module liÃªn quan. Báº¡n cÃ³ muá»‘n tÃ´i phÃ¢n tÃ­ch sÃ¢u hÆ¡n khÃ´ng?`,
+        text: `Tôi đã ghi nhận vấn đề: "${q}". Dựa trên dữ liệu dự án, tôi gợi ý bạn kiểm tra lại logic xử lý và xem xét tái cấu trúc module liên quan. Bạn có muốn tôi phân tích sâu hơn không?`,
       }]);
     }, 1400);
   };
@@ -75,9 +76,9 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
       <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gradient-to-r from-blue-900/40 to-indigo-900/20 rounded-t-2xl">
         <div className="flex items-center gap-2">
           <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-sm font-bold text-white">Trá»£ lÃ½ AI</span>
+          <span className="text-sm font-bold text-white">Trợ lý AI</span>
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">âœ•</button>
+        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">✕</button>
       </div>
 
       {/* Messages */}
@@ -96,9 +97,9 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
         {typing && (
           <div className="flex justify-start">
             <div className="bg-gray-800 text-gray-400 px-3 py-2 rounded-xl text-xs flex gap-1">
-              <span className="animate-bounce" style={{ animationDelay: "0ms" }}>â—</span>
-              <span className="animate-bounce" style={{ animationDelay: "150ms" }}>â—</span>
-              <span className="animate-bounce" style={{ animationDelay: "300ms" }}>â—</span>
+              <span className="animate-bounce" style={{ animationDelay: "0ms" }}>●</span>
+              <span className="animate-bounce" style={{ animationDelay: "150ms" }}>●</span>
+              <span className="animate-bounce" style={{ animationDelay: "300ms" }}>●</span>
             </div>
           </div>
         )}
@@ -111,23 +112,23 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
-          placeholder="Nháº­p cÃ¢u há»i..."
+          placeholder="Nhập câu hỏi..."
           className="flex-1 bg-black border border-gray-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
         />
         <button
           onClick={send}
           className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-xl transition"
         >
-          Gá»­i
+          Gửi
         </button>
       </div>
     </div>
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    TASK CARD CONTENT
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, dragHandleProps }) {
   const [menu, setMenu] = useState(false);
   const [editScore, setEditScore] = useState(false);
@@ -157,14 +158,14 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
           : "border border-gray-800 hover:border-gray-600"
         }`}
     >
-      {/* Cáº£nh bÃ¡o trá»… háº¡n */}
+      {/* Cảnh báo trễ hạn */}
       {overdue && (
         <div className="flex items-center gap-1 mb-2 px-2 py-1 bg-red-500/15 border border-red-500/40 rounded-lg">
-          <span className="text-red-400 text-[10px] font-bold animate-pulse">âš  Nguy cÆ¡ trá»… háº¡n</span>
+          <span className="text-red-400 text-[10px] font-bold animate-pulse">⚠ Nguy cơ trễ hạn</span>
         </div>
       )}
 
-      {/* Row 1: tÃªn + menu */}
+      {/* Row 1: tên + menu */}
       <div className="flex justify-between items-start mb-2">
         <p className="font-semibold text-sm leading-snug flex-1 pr-2">{task.name}</p>
 
@@ -173,7 +174,7 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
             onClick={(e) => { e.stopPropagation(); setMenu(!menu); }}
             className="text-gray-500 hover:text-white px-1"
           >
-            â‹¯
+            ⋯
           </button>
 
           {menu && (
@@ -182,32 +183,32 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
                 onClick={(e) => { e.stopPropagation(); onEdit?.(task); setMenu(false); }}
                 className="block w-full text-left px-4 py-2 hover:bg-gray-800"
               >
-                Chá»‰nh sá»­a
+                Chỉnh sửa
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onOpenAI?.(task); setMenu(false); }}
                 className="block w-full text-left px-4 py-2 hover:bg-blue-800 text-blue-400"
               >
-                Nhá» AI há»— trá»£
+                Nhờ AI hỗ trợ
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete?.(task); setMenu(false); }}
                 className="block w-full text-left px-4 py-2 hover:bg-red-700 text-red-400"
               >
-                XÃ³a
+                Xóa
               </button>
             </div>
           )}
         </div>
       </div>
 
-      {/* Row 2: Äiá»ƒm + Lá»—i + Avatar */}
+      {/* Row 2: Điểm + Lỗi + Avatar */}
       <div className="flex items-center gap-2">
-        {/* Äiá»ƒm Ä‘á»™ khÃ³ */}
+        {/* Điểm độ khó */}
         <div
           onClick={(e) => { e.stopPropagation(); setEditScore(true); setScoreInput(task.score ?? ""); }}
           className="flex-shrink-0"
-          title="Äiá»ƒm Ä‘á»™ khÃ³ (1-10)"
+          title="Điểm độ khó (1-10)"
         >
           {editScore ? (
             <input
@@ -223,21 +224,21 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
           ) : (
             <span
               className={`inline-flex items-center justify-center w-10 h-6 text-xs font-bold border rounded-lg cursor-pointer ${scoreColor}`}
-              title="Báº¥m Ä‘á»ƒ chá»‰nh Ä‘iá»ƒm"
+              title="Bấm để chỉnh điểm"
             >
-              {task.score != null ? task.score : "â€”"}
+              {task.score != null ? task.score : "—"}
             </span>
           )}
         </div>
 
-        {/* NhÃ£n lá»—i kiá»ƒm thá»­ */}
+        {/* Nhãn lỗi kiểm thử */}
         {task.bugCount > 0 && (
           <span className="inline-flex items-center gap-1 px-2 h-6 text-[10px] font-bold border border-red-600 text-red-400 bg-red-900/20 rounded-lg flex-shrink-0">
-            ðŸ› {task.bugCount} lá»—i
+            🐛 {task.bugCount} lỗi
           </span>
         )}
 
-        {/* Avatar ngÆ°á»i thá»±c hiá»‡n */}
+        {/* Avatar người thực hiện */}
         <div className="flex gap-1 flex-wrap justify-end ml-auto">
           {team.map((m) => {
             const active = task.assignee?.id === m.id;
@@ -258,7 +259,7 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
         </div>
       </div>
 
-      {/* Row 3: tÃªn ngÆ°á»i Ä‘Æ°á»£c giao + deadline */}
+      {/* Row 3: tên người được giao + deadline */}
       <div className="flex items-center justify-between mt-1.5">
         {task.assignee
           ? <p className="text-[10px] text-gray-500">Giao cho: <span className="text-gray-300">{task.assignee.name}</span></p>
@@ -274,9 +275,9 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
-   TASK CARD â€” sortable wrapper
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+/* ═══════════════════════════════════════
+   TASK CARD — sortable wrapper
+═══════════════════════════════════════ */
 function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: task.id });
 
@@ -301,9 +302,9 @@ function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScor
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    COLUMN
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team, onEditTask, onDeleteTask, onChangeAssignee, onChangeScore, onOpenAI }) {
   const { setNodeRef } = useDroppable({ id: column.id });
   const [edit, setEdit] = useState(false);
@@ -332,10 +333,10 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
             <h2 onDoubleClick={() => setEdit(true)} className="font-bold text-sm cursor-pointer">{column.name}</h2>
           )}
           <div className="relative ml-2">
-            <button onClick={(e) => { e.stopPropagation(); setMenu(!menu); }} className="text-gray-500 hover:text-white px-1">â‹¯</button>
+            <button onClick={(e) => { e.stopPropagation(); setMenu(!menu); }} className="text-gray-500 hover:text-white px-1">⋯</button>
             {menu && (
               <div className="absolute right-0 mt-1 bg-[#111827] border border-gray-700 text-xs rounded-xl overflow-hidden z-50">
-                <button onClick={() => { onDeleteColumn(column.id); setMenu(false); }} className="block px-4 py-2 hover:bg-red-700 text-red-400">XÃ³a cá»™t</button>
+                <button onClick={() => { onDeleteColumn(column.id); setMenu(false); }} className="block px-4 py-2 hover:bg-red-700 text-red-400">Xóa cột</button>
               </div>
             )}
           </div>
@@ -358,7 +359,7 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
             onClick={() => onAddTask(column.id)}
             className="mt-3 text-sm text-gray-400 hover:text-white text-left py-1 px-2 rounded-lg hover:bg-gray-800/50 transition"
           >
-            + Táº¡o cÃ´ng viá»‡c
+            + Tạo công việc
           </button>
         )}
       </div>
@@ -366,20 +367,20 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    TABS
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 const TABS = [
-  { id: "kanban",   label: "Báº£ng cÃ´ng viá»‡c (Kanban)" },
-  { id: "cicd",     label: "Luá»“ng Äáº©y Code & Kiá»ƒm thá»­ (CI/CD Git)" },
-  { id: "ai",       label: "Trung tÃ¢m Trá»£ lÃ½ AI (AI Hub & Chatbot)" },
-  { id: "report",   label: "BÃ¡o cÃ¡o & PhÃ¢n tÃ­ch Rá»§i ro" },
-  { id: "members",  label: "ThÃ nh viÃªn" },
+  { id: "kanban",   label: "Bảng công việc (Kanban)" },
+  { id: "cicd",     label: "Luồng Đẩy Code & Kiểm thử (CI/CD Git)" },
+  { id: "ai",       label: "Trung tâm Trợ lý AI (AI Hub & Chatbot)" },
+  { id: "report",   label: "Báo cáo & Phân tích Rủi ro" },
+  { id: "members",  label: "Thành viên" },
 ];
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    AI HUB TAB
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 function AIHubTab({ tasks, team, saveTasks }) {
   const bottomRef = useRef(null);
 
@@ -388,12 +389,12 @@ function AIHubTab({ tasks, team, saveTasks }) {
       from: "ai",
       type: "text",
       text: [
-        "âœ¨ Xin chÃ o! TÃ´i lÃ  **Trá»£ lÃ½ AI Gemini** cá»§a dá»± Ã¡n.",
-        "TÃ´i cÃ³ thá»ƒ giÃºp báº¡n:",
-        "â€¢ PhÃ¢n tÃ­ch vÃ  gá»£i Ã½ sá»­a lá»—i code",
-        "â€¢ Äiá»u phá»‘i cÃ´ng viá»‡c khi trá»… háº¡n",
-        "â€¢ Äá» xuáº¥t hoÃ¡n Ä‘á»•i task giá»¯a cÃ¡c thÃ nh viÃªn",
-        "â€¢ Tráº£ lá»i báº¥t ká»³ cÃ¢u há»i nÃ o vá» dá»± Ã¡n!",
+        "✨ Xin chào! Tôi là **Trợ lý AI Gemini** của dự án.",
+        "Tôi có thể giúp bạn:",
+        "• Phân tích và gợi ý sửa lỗi code",
+        "• Điều phối công việc khi trễ hạn",
+        "• Đề xuất hoán đổi task giữa các thành viên",
+        "• Trả lời bất kỳ câu hỏi nào về dự án!",
       ].join("\n"),
     },
   ]);
@@ -401,14 +402,14 @@ function AIHubTab({ tasks, team, saveTasks }) {
   const [typing,          setTyping]          = useState(false);
   const [selectedTask,    setSelectedTask]    = useState("");
   const [reassignProposal,setReassignProposal]= useState(null);
-  /** LÆ°u lá»‹ch sá»­ há»™i thoáº¡i Ä‘á»ƒ gá»­i cho Gemini (tiáº¿t kiá»‡m token: chá»‰ 4 tin nháº¯n cuá»‘i) */
+  /** Lưu lịch sử hội thoại để gửi cho Gemini (tiết kiệm token: chỉ 4 tin nhắn cuối) */
   const chatHistory = useRef([]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, typing, reassignProposal]);
 
-  /* â€” Typing indicator rá»“i thÃªm tin AI â€” */
+  /* — Typing indicator rồi thêm tin AI — */
   const pushAI = (msgObj, delay = 1200) => {
     setTyping(true);
     setTimeout(() => {
@@ -417,65 +418,65 @@ function AIHubTab({ tasks, team, saveTasks }) {
     }, delay);
   };
 
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-     Ká»‹ch báº£n 1: Sá»­a lá»—i code
-  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ────────────────────────────────
+     Kịch bản 1: Sửa lỗi code
+  ──────────────────────────────── */
   const handleAnalyzeBug = () => {
     const task = tasks.find((t) => t.id === selectedTask);
     if (!task) return;
 
     setMessages((p) => [
       ...p,
-      { from: "user", type: "text", text: `PhÃ¢n tÃ­ch lá»—i kiá»ƒm thá»­ cho task: "${task.name}" (${task.bugCount || 0} lá»—i)` },
+      { from: "user", type: "text", text: `Phân tích lỗi kiểm thử cho task: "${task.name}" (${task.bugCount || 0} lỗi)` },
     ]);
 
     pushAI({
       type: "code",
-      title: `PhÃ¢n tÃ­ch lá»—i: "${task.name}"`,
-      body: `TÃ´i Ä‘Ã£ Ä‘á»c lá»‹ch sá»­ commit vÃ  phÃ¡t hiá»‡n lá»—i táº¡i service liÃªn quan:
+      title: `Phân tích lỗi: "${task.name}"`,
+      body: `Tôi đã đọc lịch sử commit và phát hiện lỗi tại service liên quan:
 
-**Lá»—i phÃ¡t hiá»‡n:** Sai Ä‘á»‹nh dáº¡ng xá»­ lÃ½ dá»¯ liá»‡u á»Ÿ mÃ´-Ä‘un "${task.name}"
+**Lỗi phát hiện:** Sai định dạng xử lý dữ liệu ở mô-đun "${task.name}"
 
-**CÃ¢u lá»‡nh lá»—i (dÃ²ng 45):**`,
-      codeBefore: `// SAI - Dá»¯ liá»‡u chÆ°a Ä‘Æ°á»£c validate
+**Câu lệnh lỗi (dòng 45):**`,
+      codeBefore: `// SAI - Dữ liệu chưa được validate
 public void process(String input) {
     Date d = new SimpleDateFormat("dd/MM/yyyy").parse(input);
     repository.save(new Record(d, input));
 }`,
-      codeAfter: `// ÄÃƒ Sá»¬a - Validate + xá»­ lÃ½ ngoáº¡i lá»‡ Ä‘Ãºng cÃ¡ch
+      codeAfter: `// ĐÃ SỬa - Validate + xử lý ngoại lệ đúng cách
 public void process(String input) {
     if (input == null || input.isBlank())
-        throw new IllegalArgumentException("Input khÃ´ng há»£p lá»‡");
+        throw new IllegalArgumentException("Input không hợp lệ");
     try {
         LocalDate d = LocalDate.parse(input,
             DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         repository.save(new Record(d, input));
     } catch (DateTimeParseException e) {
-        log.error("Sai Ä‘á»‹nh dáº¡ng ngÃ y: {}", input, e);
-        throw new BadRequestException("Äá»‹nh dáº¡ng ngÃ y khÃ´ng Ä‘Ãºng. YÃªu cáº§u: dd/MM/yyyy");
+        log.error("Sai định dạng ngày: {}", input, e);
+        throw new BadRequestException("Định dạng ngày không đúng. Yêu cầu: dd/MM/yyyy");
     }
 }`,
-      footer: `HÃ£y thay tháº¿ Ä‘oáº¡n code cÅ© báº±ng Ä‘oáº¡n Ä‘Ã£ sá»­a trÃªn. Task Ä‘Ã£ giáº£m tá»« **${task.bugCount || 1} lá»—i** xuá»‘ng 0 sau khi Ã¡p dá»¥ng fix nÃ y.`,
+      footer: `Hãy thay thế đoạn code cũ bằng đoạn đã sửa trên. Task đã giảm từ **${task.bugCount || 1} lỗi** xuống 0 sau khi áp dụng fix này.`,
     }, 1800);
   };
 
-  /* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-     Ká»‹ch báº£n 2: KhÃ´ng thá»ƒ hoÃ n thÃ nh â€” Äá» xuáº¥t hoÃ¡n Ä‘á»•i
-  â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  /* ────────────────────────────────
+     Kịch bản 2: Không thể hoàn thành — Đề xuất hoán đổi
+  ──────────────────────────────── */
   const handleCannotFinish = () => {
     const task = tasks.find((t) => t.id === selectedTask);
     if (!task) {
-      setMessages((p) => [...p, { from: "user", type: "text", text: "TÃ´i khÃ´ng thá»ƒ hoÃ n thÃ nh tÃ¡c vá»¥ nÃ y Ä‘Ãºng háº¡n." }]);
-      pushAI({ type: "text", text: "Vui lÃ²ng chá»n cÃ´ng viá»‡c cá»¥ thá»ƒ á»Ÿ Ã´ bÃªn dÆ°á»›i trÆ°á»›c khi gá»­i yÃªu cáº§u nÃ y Ä‘á»ƒ tÃ´i cÃ³ thá»ƒ tÃ¬m ngÆ°á»i phÃ¹ há»£p há»— trá»£ báº¡n." });
+      setMessages((p) => [...p, { from: "user", type: "text", text: "Tôi không thể hoàn thành tác vụ này đúng hạn." }]);
+      pushAI({ type: "text", text: "Vui lòng chọn công việc cụ thể ở ô bên dưới trước khi gửi yêu cầu này để tôi có thể tìm người phù hợp hỗ trợ bạn." });
       return;
     }
 
     setMessages((p) => [...p, {
       from: "user", type: "text",
-      text: `TÃ´i khÃ´ng thá»ƒ hoÃ n thÃ nh task â€œ${task.name}â€ Ä‘Ãºng háº¡n.`,
+      text: `Tôi không thể hoàn thành task “${task.name}” đúng hạn.`,
     }]);
 
-    /* TÃ¬m thÃ nh viÃªn nháº¹ táº£i nháº¥t (nháº¥t Ã­t task chÆ°a done) */
+    /* Tìm thành viên nhẹ tải nhất (nhất ít task chưa done) */
     setTyping(true);
     setTimeout(() => {
       setTyping(false);
@@ -485,12 +486,12 @@ public void process(String input) {
       if (candidates.length === 0) {
         setMessages((p) => [...p, {
           from: "ai", type: "text",
-          text: "KhÃ´ng tÃ¬m tháº¥y thÃ nh viÃªn khÃ¡c trong nhÃ³m. Vui lÃ²ng thÃªm thÃ nh viÃªn vÃ o nhÃ³m trÆ°á»›c.",
+          text: "Không tìm thấy thành viên khác trong nhóm. Vui lòng thêm thành viên vào nhóm trước.",
         }]);
         return;
       }
 
-      /* Äáº¿m sá»‘ task chÆ°a done cá»§a má»—i thÃ nh viÃªn */
+      /* Đếm số task chưa done của mỗi thành viên */
       const workload = candidates.map((m) => ({
         member: m,
         count: tasks.filter((t) => t.assignee?.id === m.id && t.status !== "done").length,
@@ -498,7 +499,7 @@ public void process(String input) {
       workload.sort((a, b) => a.count - b.count);
       const best = workload[0];
 
-      /* TÃ¬m task nháº¹ nháº¥t cá»§a ngÆ°á»i Ä‘Ã³ Ä‘á»ƒ hoÃ¡n Ä‘á»•i ngÆ°á»£c láº¡i */
+      /* Tìm task nhẹ nhất của người đó để hoán đổi ngược lại */
       const swapTask = tasks.find(
         (t) => t.assignee?.id === best.member.id && t.status !== "done" && t.id !== task.id
       );
@@ -512,12 +513,12 @@ public void process(String input) {
 
       setMessages((p) => [...p, {
         from: "ai", type: "text",
-        text: `TÃ´i Ä‘Ã£ quÃ©t toÃ n bá»™ ${team.length} thÃ nh viÃªn. **${best.member.name}** Ä‘ang cÃ³ khá»‘i lÆ°á»£ng nháº¹ nháº¥t (${best.count} task). Xem Ä‘á» xuáº¥t hoÃ¡n Ä‘á»•i bÃªn dÆ°á»›i.`,
+        text: `Tôi đã quét toàn bộ ${team.length} thành viên. **${best.member.name}** đang có khối lượng nhẹ nhất (${best.count} task). Xem đề xuất hoán đổi bên dưới.`,
       }]);
     }, 2000);
   };
 
-  /* â”€â”€ Thá»±c hiá»‡n hoÃ¡n Ä‘á»•i â”€â”€ */
+  /* ── Thực hiện hoán đổi ── */
   const confirmReassign = () => {
     if (!reassignProposal) return;
     const { fromTask, toMember, swapTask, fromMember } = reassignProposal;
@@ -532,7 +533,7 @@ public void process(String input) {
 
     setMessages((p) => [...p, {
       from: "ai", type: "text",
-      text: `âœ… HoÃ¡n Ä‘á»•i thÃ nh cÃ´ng! Task â€œ${fromTask.name}â€ Ä‘Ã£ Ä‘Æ°á»£c chuyá»ƒn sang **${toMember.name}**. Báº£ng Kanban Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t.`,
+      text: `✅ Hoán đổi thành công! Task “${fromTask.name}” đã được chuyển sang **${toMember.name}**. Bảng Kanban đã được cập nhật.`,
     }]);
   };
 
@@ -588,7 +589,7 @@ public void process(String input) {
   };
 
 
-  /* â”€â”€ Render message â”€â”€ */
+  /* ── Render message ── */
   const renderMsg = (m, i) => {
     if (m.from === "user") {
       return (
@@ -605,7 +606,7 @@ public void process(String input) {
         <div key={i} className="flex justify-start">
           <div className="bg-[#111827] border border-gray-700 rounded-2xl rounded-tl-sm max-w-[90%] overflow-hidden">
             <div className="px-4 py-2.5 border-b border-gray-700">
-              <p className="text-xs font-bold text-blue-400">âœ¨ {m.title}</p>
+              <p className="text-xs font-bold text-blue-400">✨ {m.title}</p>
             </div>
             <div className="px-4 py-3 space-y-3">
               {m.body.split("\n").map((line, li) => (
@@ -616,11 +617,11 @@ public void process(String input) {
                 </p>
               ))}
               <div>
-                <p className="text-[10px] text-red-400 mb-1 font-semibold uppercase tracking-wider">Code cÅ© (cÃ³ lá»—i)</p>
+                <p className="text-[10px] text-red-400 mb-1 font-semibold uppercase tracking-wider">Code cũ (có lỗi)</p>
                 <pre className="bg-red-950/40 border border-red-800/50 text-red-300 text-[11px] p-3 rounded-xl overflow-x-auto font-mono leading-relaxed">{m.codeBefore}</pre>
               </div>
               <div>
-                <p className="text-[10px] text-green-400 mb-1 font-semibold uppercase tracking-wider">Code Ä‘Ã£ sá»­a</p>
+                <p className="text-[10px] text-green-400 mb-1 font-semibold uppercase tracking-wider">Code đã sửa</p>
                 <pre className="bg-green-950/40 border border-green-800/50 text-green-300 text-[11px] p-3 rounded-xl overflow-x-auto font-mono leading-relaxed">{m.codeAfter}</pre>
               </div>
               <p className="text-xs text-gray-400 italic leading-relaxed">{m.footer}</p>
@@ -630,7 +631,7 @@ public void process(String input) {
       );
     }
 
-    /* text thÆ°á»ng */
+    /* text thường */
     return (
       <div key={i} className="flex justify-start">
         <div className="bg-[#111827] border border-gray-800 text-gray-200 px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm max-w-[80%] leading-relaxed whitespace-pre-line">
@@ -653,8 +654,8 @@ public void process(String input) {
         <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-800 bg-gradient-to-r from-blue-900/30 to-indigo-900/10">
           <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
           <div>
-            <p className="text-sm font-bold text-white">Trá»£ lÃ½ AI â€” Project Assistant</p>
-            <p className="text-[10px] text-gray-500">Sáºµn sÃ ng há»— trá»£ â€¢ PhÃ¢n tÃ­ch code â€¢ Äiá»u phá»‘i cÃ´ng viá»‡c</p>
+            <p className="text-sm font-bold text-white">Trợ lý AI — Project Assistant</p>
+            <p className="text-[10px] text-gray-500">Sẵn sàng hỗ trợ • Phân tích code • Điều phối công việc</p>
           </div>
         </div>
 
@@ -681,13 +682,13 @@ public void process(String input) {
               onClick={handleCannotFinish}
               className="text-xs px-3 py-1.5 bg-red-900/30 border border-red-700/50 text-red-300 rounded-xl hover:bg-red-900/50 transition"
             >
-              TÃ´i khÃ´ng thá»ƒ hoÃ n thÃ nh task Ä‘Ãºng háº¡n
+              Tôi không thể hoàn thành task đúng hạn
             </button>
             <button
               onClick={handleAnalyzeBug}
               className="text-xs px-3 py-1.5 bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 rounded-xl hover:bg-yellow-900/50 transition"
             >
-              PhÃ¢n tÃ­ch lá»—i code
+              Phân tích lỗi code
             </button>
           </div>
 
@@ -697,15 +698,15 @@ public void process(String input) {
             onChange={(e) => setSelectedTask(e.target.value)}
             className="w-full mb-3 p-2.5 bg-black border border-gray-700 rounded-xl text-sm text-gray-300 outline-none focus:border-blue-500"
           >
-            <option value="">â€” Chá»n cÃ´ng viá»‡c Ä‘á»ƒ thá»±c hiá»‡n thao tÃ¡c â€”</option>
-            <optgroup label="CÃ³ lá»—i / Trá»… háº¡n">
+            <option value="">— Chọn công việc để thực hiện thao tác —</option>
+            <optgroup label="Có lỗi / Trễ hạn">
               {bugTasks.map((t) => (
                 <option key={t.id} value={t.id}>
-                  {t.name}{t.bugCount > 0 ? ` (ðŸ› ${t.bugCount} lá»—i)` : ""}{isOverdue(t) ? " âš ï¸ Trá»… háº¡n" : ""}
+                  {t.name}{t.bugCount > 0 ? ` (🐛 ${t.bugCount} lỗi)` : ""}{isOverdue(t) ? " ⚠️ Trễ hạn" : ""}
                 </option>
               ))}
             </optgroup>
-            <optgroup label="Táº¥t cáº£ task Ä‘ang tiáº¿n hÃ nh">
+            <optgroup label="Tất cả task đang tiến hành">
               {allActiveTasks.map((t) => (
                 <option key={t.id} value={t.id}>{t.name}</option>
               ))}
@@ -717,28 +718,28 @@ public void process(String input) {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
-              placeholder="Nháº­p tin nháº¯n cho Trá»£ lÃ½ AI..."
+              placeholder="Nhập tin nhắn cho Trợ lý AI..."
               className="flex-1 p-3 bg-black border border-gray-700 focus:border-blue-500 rounded-xl text-sm text-white outline-none placeholder-gray-600"
             />
             <button
               onClick={send}
               className="px-5 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold transition"
             >
-              Gá»­i
+              Gửi
             </button>
           </div>
         </div>
       </div>
 
-      {/* RIGHT PANEL: TÃ³m táº¯t + Äá» xuáº¥t */}
+      {/* RIGHT PANEL: Tóm tắt + Đề xuất */}
       <div className="w-72 flex flex-col gap-4">
 
         {/* Overdue tasks list */}
         <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">âš ï¸ Nguy cÆ¡ trá»… háº¡n</p>
+          <p className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">⚠️ Nguy cơ trễ hạn</p>
           {tasks.filter(isOverdue).length === 0 ? (
-            <p className="text-xs text-gray-600 italic">KhÃ´ng cÃ³ task nÃ o trá»… háº¡n.
-              <span className="text-green-400"> Tuyá»‡t vá»i!</span>
+            <p className="text-xs text-gray-600 italic">Không có task nào trễ hạn.
+              <span className="text-green-400"> Tuyệt vời!</span>
             </p>
           ) : (
             <div className="space-y-2">
@@ -746,7 +747,7 @@ public void process(String input) {
                 <div key={t.id} className="p-2 bg-red-900/10 border border-red-800/30 rounded-xl">
                   <p className="text-xs font-medium text-red-300">{t.name}</p>
                   {t.assignee && <p className="text-[10px] text-gray-500 mt-0.5">{t.assignee.name}</p>}
-                  <p className="text-[10px] text-red-500 mt-0.5">Háº¡n: {t.deadline}</p>
+                  <p className="text-[10px] text-red-500 mt-0.5">Hạn: {t.deadline}</p>
                 </div>
               ))}
             </div>
@@ -755,26 +756,26 @@ public void process(String input) {
 
         {/* Bug tasks */}
         <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-3">ðŸ› Lá»—i kiá»ƒm thá»­</p>
+          <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-3">🐛 Lỗi kiểm thử</p>
           {tasks.filter((t) => t.bugCount > 0).length === 0 ? (
-            <p className="text-xs text-gray-600 italic">KhÃ´ng cÃ³ lá»—i nÃ o.</p>
+            <p className="text-xs text-gray-600 italic">Không có lỗi nào.</p>
           ) : (
             <div className="space-y-2">
               {tasks.filter((t) => t.bugCount > 0).map((t) => (
                 <div key={t.id} className="p-2 bg-yellow-900/10 border border-yellow-800/30 rounded-xl">
                   <p className="text-xs font-medium text-yellow-300">{t.name}</p>
-                  <p className="text-[10px] text-red-400 mt-0.5">{t.bugCount} lá»—i tá»“n Ä‘á»Šng</p>
+                  <p className="text-[10px] text-red-400 mt-0.5">{t.bugCount} lỗi tồn đỊng</p>
                 </div>
               ))}
             </div>
           )}
         </div>
 
-        {/* Táº£i trá»ng thÃ nh viÃªn */}
+        {/* Tải trọng thành viên */}
         <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">ðŸ‘¥ Táº£i trá»ng nhÃ³m</p>
+          <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">👥 Tải trọng nhóm</p>
           {team.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">ChÆ°a cÃ³ thÃ nh viÃªn.</p>
+            <p className="text-xs text-gray-600 italic">Chưa có thành viên.</p>
           ) : (
             <div className="space-y-2">
               {team.map((m) => {
@@ -802,48 +803,48 @@ public void process(String input) {
         </div>
       </div>
 
-      {/* Há»˜P THOáº I Äá»€ XUáº¤T HOÃN Äá»”I */}
+      {/* HỘP THOẠI ĐỀ XUẤT HOÁN ĐỔI */}
       {reassignProposal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-[#0b0f1a] border border-blue-700/50 rounded-2xl w-[480px] shadow-2xl shadow-blue-900/20 animate-fadeIn">
 
             <div className="px-6 pt-5 pb-4 border-b border-gray-800">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-blue-400 text-lg">âœ¨</span>
-                <h2 className="font-bold text-white">AI Ä‘á» xuáº¥t: HoÃ¡n Ä‘á»•i cÃ´ng viá»‡c</h2>
+                <span className="text-blue-400 text-lg">✨</span>
+                <h2 className="font-bold text-white">AI đề xuất: Hoán đổi công việc</h2>
               </div>
-              <p className="text-xs text-gray-400">Há»‡ thá»‘ng sáº½ tá»± Ä‘á»™ng cáº­p nháº­t Báº£ng Kanban sau khi xÃ¡c nháº­n</p>
+              <p className="text-xs text-gray-400">Hệ thống sẽ tự động cập nhật Bảng Kanban sau khi xác nhận</p>
             </div>
 
             <div className="px-6 py-5 space-y-4">
-              {/* Task bá»‹ chuyá»ƒn */}
+              {/* Task bị chuyển */}
               <div className="p-4 bg-red-900/10 border border-red-800/30 rounded-xl">
-                <p className="text-[10px] text-red-400 uppercase font-semibold mb-1">Chuyá»ƒn task nÃ y sang</p>
+                <p className="text-[10px] text-red-400 uppercase font-semibold mb-1">Chuyển task này sang</p>
                 <p className="text-sm font-bold text-white">{reassignProposal.fromTask.name}</p>
                 <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
                   <span className="text-gray-500">
-                    {reassignProposal.fromMember?.name || "(chÆ°a giao)"}
+                    {reassignProposal.fromMember?.name || "(chưa giao)"}
                   </span>
-                  <span className="text-blue-400 font-bold">â†’</span>
+                  <span className="text-blue-400 font-bold">→</span>
                   <span className="text-green-400 font-bold">{reassignProposal.toMember.name}</span>
                 </div>
               </div>
 
-              {/* Swap ngÆ°á»£c láº¡i */}
+              {/* Swap ngược lại */}
               {reassignProposal.swapTask && (
                 <div className="p-4 bg-blue-900/10 border border-blue-800/30 rounded-xl">
-                  <p className="text-[10px] text-blue-400 uppercase font-semibold mb-1">{reassignProposal.toMember.name} nháº­n láº¡i</p>
+                  <p className="text-[10px] text-blue-400 uppercase font-semibold mb-1">{reassignProposal.toMember.name} nhận lại</p>
                   <p className="text-sm font-bold text-white">{reassignProposal.swapTask.name}</p>
                   <div className="flex items-center gap-2 mt-2 text-xs">
                     <span className="text-gray-500">{reassignProposal.toMember.name}</span>
-                    <span className="text-blue-400 font-bold">â†’</span>
-                    <span className="text-yellow-400 font-bold">{reassignProposal.fromMember?.name || "(khÃ´ng rÃµ)"}</span>
+                    <span className="text-blue-400 font-bold">→</span>
+                    <span className="text-yellow-400 font-bold">{reassignProposal.fromMember?.name || "(không rõ)"}</span>
                   </div>
                 </div>
               )}
 
               <p className="text-xs text-gray-500 leading-relaxed">
-                LÃ½ do: <span className="text-gray-300">{reassignProposal.toMember.name}</span> Ä‘ang cÃ³ khá»‘i lÆ°á»£ng cÃ´ng viá»‡c tháº¥p nháº¥t trong nhÃ³m â€” AI Ä‘Ã¡nh giÃ¡ cÃ³ thá»ƒ tiáº¿p nháº­n task nÃ y nhanh hÆ¡n.
+                Lý do: <span className="text-gray-300">{reassignProposal.toMember.name}</span> đang có khối lượng công việc thấp nhất trong nhóm — AI đánh giá có thể tiếp nhận task này nhanh hơn.
               </p>
             </div>
 
@@ -852,13 +853,13 @@ public void process(String input) {
                 onClick={() => setReassignProposal(null)}
                 className="px-4 py-2 text-sm text-gray-400 hover:text-white transition"
               >
-                Tá»« chá»‘i
+                Từ chối
               </button>
               <button
                 onClick={confirmReassign}
                 className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold text-white transition"
               >
-                âœ… Äá»’NG Ã â€” HoÃ¡n Ä‘á»•i ngay
+                ✅ ĐỒNG Ý — Hoán đổi ngay
               </button>
             </div>
           </div>
@@ -868,12 +869,12 @@ public void process(String input) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    REPORT TAB
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 function ReportTab({ tasks, team, projectName }) {
 
-  /* â”€â”€ Risk Score algorithm â”€â”€ */
+  /* ── Risk Score algorithm ── */
   const riskScore = useMemo(() => {
     if (tasks.length === 0) return 0;
     const overdueCount = tasks.filter(isOverdue).length;
@@ -889,19 +890,19 @@ function ReportTab({ tasks, team, projectName }) {
   }, [tasks]);
 
   const riskColor =
-    riskScore < 30 ? { bar: "#22c55e", text: "text-green-400", label: "An toÃ n",          bg: "bg-green-500" } :
-    riskScore < 60 ? { bar: "#eab308", text: "text-yellow-400", label: "Rá»§i ro trung bÃ¬nh", bg: "bg-yellow-500" } :
-                     { bar: "#ef4444", text: "text-red-400",    label: "Nguy hiá»ƒm!",        bg: "bg-red-500" };
+    riskScore < 30 ? { bar: "#22c55e", text: "text-green-400", label: "An toàn",          bg: "bg-green-500" } :
+    riskScore < 60 ? { bar: "#eab308", text: "text-yellow-400", label: "Rủi ro trung bình", bg: "bg-yellow-500" } :
+                     { bar: "#ef4444", text: "text-red-400",    label: "Nguy hiểm!",        bg: "bg-red-500" };
 
-  /* â”€â”€ Biá»ƒu Ä‘á»“ 1: Tráº¡ng thÃ¡i task â”€â”€ */
+  /* ── Biểu đồ 1: Trạng thái task ── */
   const taskStatusData = useMemo(() => [
-    { name: "Chá» xá»­ lÃ½",      value: tasks.filter((t) => t.status === "todo").length,   color: "#64748b" },
-    { name: "Äang thá»±c hiá»‡n", value: tasks.filter((t) => t.status === "doing").length,  color: "#3b82f6" },
-    { name: "Äang xem xÃ©t",   value: tasks.filter((t) => t.status === "review").length, color: "#f59e0b" },
-    { name: "HoÃ n thÃ nh",     value: tasks.filter((t) => t.status === "done").length,   color: "#22c55e" },
+    { name: "Chờ xử lý",      value: tasks.filter((t) => t.status === "todo").length,   color: "#64748b" },
+    { name: "Đang thực hiện", value: tasks.filter((t) => t.status === "doing").length,  color: "#3b82f6" },
+    { name: "Đang xem xét",   value: tasks.filter((t) => t.status === "review").length, color: "#f59e0b" },
+    { name: "Hoàn thành",     value: tasks.filter((t) => t.status === "done").length,   color: "#22c55e" },
   ].filter((d) => d.value > 0), [tasks]);
 
-  /* â”€â”€ Biá»ƒu Ä‘á»“ 2: Hiá»‡u suáº¥t thÃ nh viÃªn â”€â”€ */
+  /* ── Biểu đồ 2: Hiệu suất thành viên ── */
   const memberPerfData = useMemo(() => team.map((m) => {
     const myTasks   = tasks.filter((t) => t.assignee?.id === m.id);
     const done      = myTasks.filter((t) => t.status === "done").length;
@@ -909,7 +910,7 @@ function ReportTab({ tasks, team, projectName }) {
     const commits   = Math.max(1, done * 3 + myTasks.length * 2);
     const failRate  = myTasks.length > 0 ? Math.round((totalBugs / Math.max(myTasks.length * 2, 1)) * 100) : 0;
     return {
-      name:     m.name.length > 9 ? m.name.slice(0, 9) + "â€¦" : m.name,
+      name:     m.name.length > 9 ? m.name.slice(0, 9) + "…" : m.name,
       fullName: m.name,
       commits,
       pass: 100 - Math.min(failRate, 100),
@@ -919,7 +920,7 @@ function ReportTab({ tasks, team, projectName }) {
     };
   }), [tasks, team]);
 
-  /* â”€â”€ AI Recommendations â”€â”€ */
+  /* ── AI Recommendations ── */
   const aiRecommendations = useMemo(() => {
     const recs = [];
     const overdueList     = tasks.filter(isOverdue);
@@ -927,34 +928,34 @@ function ReportTab({ tasks, team, projectName }) {
     const doneRatio       = tasks.length > 0 ? tasks.filter((t) => t.status === "done").length / tasks.length : 0;
 
     if (riskScore >= 60) {
-      recs.push({ type: "danger",  icon: "ðŸš¨", title: "Nguy hiá»ƒm: Dá»± Ã¡n cÃ³ nguy cÆ¡ cháº­m deadline",
-        body: `Chá»‰ sá»‘ rá»§i ro Ä‘ang á»Ÿ má»©c ${riskScore}% â€” vÆ°á»£t ngÆ°á»¡ng an toÃ n. Tá»‘c Ä‘á»™ hoÃ n thÃ nh cÃ´ng viá»‡c cá»§a nhÃ³m Ä‘ang giáº£m so vá»›i káº¿ hoáº¡ch ban Ä‘áº§u. Æ¯á»›c tÃ­nh rá»§i ro cháº­m tiáº¿n Ä‘á»™ khoáº£ng 3â€“5 ngÃ y.` });
+      recs.push({ type: "danger",  icon: "🚨", title: "Nguy hiểm: Dự án có nguy cơ chậm deadline",
+        body: `Chỉ số rủi ro đang ở mức ${riskScore}% — vượt ngưỡng an toàn. Tốc độ hoàn thành công việc của nhóm đang giảm so với kế hoạch ban đầu. Ước tính rủi ro chậm tiến độ khoảng 3–5 ngày.` });
     } else if (riskScore >= 30) {
-      recs.push({ type: "warning", icon: "âš ï¸", title: "Cáº£nh bÃ¡o: Tá»‘c Ä‘á»™ cáº§n cáº£i thiá»‡n",
-        body: `Chá»‰ sá»‘ rá»§i ro ${riskScore}% â€” má»©c trung bÃ¬nh. NhÃ³m nÃªn tÄƒng táº§n suáº¥t stand-up hÃ ng ngÃ y vÃ  rÃ  soÃ¡t task Ä‘á»ƒ phÃ¡t hiá»‡n Ä‘iá»ƒm ngháº½n sá»›m.` });
+      recs.push({ type: "warning", icon: "⚠️", title: "Cảnh báo: Tốc độ cần cải thiện",
+        body: `Chỉ số rủi ro ${riskScore}% — mức trung bình. Nhóm nên tăng tần suất stand-up hàng ngày và rà soát task để phát hiện điểm nghẽn sớm.` });
     } else {
-      recs.push({ type: "success", icon: "âœ…", title: "Dá»± Ã¡n Ä‘ang á»Ÿ tráº¡ng thÃ¡i tá»‘t",
-        body: `Chá»‰ sá»‘ rá»§i ro chá»‰ ${riskScore}% â€” náº±m trong vÃ¹ng an toÃ n. Tiáº¿p tá»¥c duy trÃ¬ nhá»‹p Ä‘á»™ hiá»‡n táº¡i.` });
+      recs.push({ type: "success", icon: "✅", title: "Dự án đang ở trạng thái tốt",
+        body: `Chỉ số rủi ro chỉ ${riskScore}% — nằm trong vùng an toàn. Tiếp tục duy trì nhịp độ hiện tại.` });
     }
 
     if (overdueList.length > 0) {
-      recs.push({ type: "warning", icon: "â°", title: `PhÃ¡t hiá»‡n ${overdueList.length} task trá»… háº¡n`,
-        body: `CÃ¡c task: ${overdueList.map((t) => `"${t.name}"`).join(", ")} Ä‘ang quÃ¡ háº¡n. Khuyáº¿n nghá»‹ TrÆ°á»Ÿng nhÃ³m há»p kháº©n hoáº·c sá»­ dá»¥ng chá»©c nÄƒng hoÃ¡n Ä‘á»•i task tá»± Ä‘á»™ng táº¡i tab AI Hub.` });
+      recs.push({ type: "warning", icon: "⏰", title: `Phát hiện ${overdueList.length} task trễ hạn`,
+        body: `Các task: ${overdueList.map((t) => `"${t.name}"`).join(", ")} đang quá hạn. Khuyến nghị Trưởng nhóm họp khẩn hoặc sử dụng chức năng hoán đổi task tự động tại tab AI Hub.` });
     }
 
     if (highBugMember && highBugMember.fail >= 50) {
-      recs.push({ type: "danger",  icon: "ðŸ›", title: `Tá»· lá»‡ fail test case cao: ${highBugMember.fullName}`,
-        body: `ThÃ nh viÃªn ${highBugMember.fullName} Ä‘ang cÃ³ tá»· lá»‡ fail test case lÃªn tá»›i ${highBugMember.fail}%. Khuyáº¿n nghá»‹: TrÆ°á»Ÿng nhÃ³m cáº§n há»p kháº©n Ä‘á»ƒ phÃ¢n chia láº¡i module, giáº£m táº£i Ä‘á»ƒ thÃ nh viÃªn nÃ y cÃ³ thá»i gian xá»­ lÃ½ lá»—i tá»“n Ä‘á»ng.` });
+      recs.push({ type: "danger",  icon: "🐛", title: `Tỷ lệ fail test case cao: ${highBugMember.fullName}`,
+        body: `Thành viên ${highBugMember.fullName} đang có tỷ lệ fail test case lên tới ${highBugMember.fail}%. Khuyến nghị: Trưởng nhóm cần họp khẩn để phân chia lại module, giảm tải để thành viên này có thời gian xử lý lỗi tồn đọng.` });
     }
 
     if (doneRatio >= 0.8) {
-      recs.push({ type: "success", icon: "ðŸ†", title: "Tiáº¿n Ä‘á»™ xuáº¥t sáº¯c",
-        body: `${Math.round(doneRatio * 100)}% cÃ´ng viá»‡c Ä‘Ã£ hoÃ n thÃ nh. NhÃ³m Ä‘ang lÃ m viá»‡c ráº¥t hiá»‡u quáº£!` });
+      recs.push({ type: "success", icon: "🏆", title: "Tiến độ xuất sắc",
+        body: `${Math.round(doneRatio * 100)}% công việc đã hoàn thành. Nhóm đang làm việc rất hiệu quả!` });
     }
 
     if (recs.length <= 1) {
-      recs.push({ type: "info", icon: "ðŸ’¡", title: "Gá»£i Ã½: TÄƒng cÆ°á»ng kiá»ƒm thá»­ tá»± Ä‘á»™ng",
-        body: "HÃ£y Ä‘áº£m báº£o unit test coverage Ä‘áº¡t Ã­t nháº¥t 80% trÆ°á»›c khi demo sáº£n pháº©m cho Giáº£ng viÃªn hÆ°á»›ng dáº«n." });
+      recs.push({ type: "info", icon: "💡", title: "Gợi ý: Tăng cường kiểm thử tự động",
+        body: "Hãy đảm bảo unit test coverage đạt ít nhất 80% trước khi demo sản phẩm cho Giảng viên hướng dẫn." });
     }
 
     return recs;
@@ -983,7 +984,7 @@ function ReportTab({ tasks, team, projectName }) {
       <div className="bg-[#111827] border border-gray-700 px-3 py-2 rounded-xl text-xs shadow-lg">
         <p className="font-bold text-white mb-1">{label}</p>
         {payload.map((p, i) => (
-          <p key={i} style={{ color: p.color }}>{p.name}: {p.value}{p.name === "Commits" ? " láº§n" : "%"}</p>
+          <p key={i} style={{ color: p.color }}>{p.name}: {p.value}{p.name === "Commits" ? " lần" : "%"}</p>
         ))}
       </div>
     );
@@ -992,12 +993,12 @@ function ReportTab({ tasks, team, projectName }) {
   return (
     <div className="space-y-5">
 
-      {/* â”€â”€â”€ RISK METER â”€â”€â”€ */}
+      {/* ─── RISK METER ─── */}
       <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-6">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="text-base font-bold text-white">Chá»‰ sá»‘ Rá»§i ro Dá»± Ã¡n</h2>
-            <p className="text-xs text-gray-500 mt-0.5">Tá»± Ä‘á»™ng tÃ­nh toÃ¡n tá»« dá»¯ liá»‡u task, lá»—i vÃ  tiáº¿n Ä‘á»™</p>
+            <h2 className="text-base font-bold text-white">Chỉ số Rủi ro Dự án</h2>
+            <p className="text-xs text-gray-500 mt-0.5">Tự động tính toán từ dữ liệu task, lỗi và tiến độ</p>
           </div>
           <div className="text-right">
             <p className={`text-4xl font-black tabular-nums ${riskColor.text}`}>{riskScore}%</p>
@@ -1005,7 +1006,7 @@ function ReportTab({ tasks, team, projectName }) {
           </div>
         </div>
 
-        {/* Thanh Ä‘o */}
+        {/* Thanh đo */}
         <div className="relative mb-2">
           <div className="h-6 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
             <div
@@ -1027,18 +1028,18 @@ function ReportTab({ tasks, team, projectName }) {
         </div>
         <div className="flex text-[10px] text-gray-600 mb-5">
           <span className="flex-none">0%</span>
-          <span className="text-green-600/70 ml-[26%]">An toÃ n</span>
-          <span className="text-yellow-600/70 ml-[22%]">Trung bÃ¬nh</span>
+          <span className="text-green-600/70 ml-[26%]">An toàn</span>
+          <span className="text-yellow-600/70 ml-[22%]">Trung bình</span>
           <span className="text-red-600/70 ml-auto">100%</span>
         </div>
 
         {/* Pills */}
         <div className="flex gap-3 flex-wrap">
           {[
-            { label: "Task trá»… háº¡n",  val: tasks.filter(isOverdue).length,                                   color: "text-red-400 bg-red-900/20 border-red-800/40" },
-            { label: "Lá»—i tá»“n Ä‘á»ng",  val: tasks.reduce((s, t) => s + (t.bugCount || 0), 0),                 color: "text-yellow-400 bg-yellow-900/20 border-yellow-800/40" },
-            { label: "HoÃ n thÃ nh",    val: `${tasks.filter((t) => t.status === "done").length}/${tasks.length}`, color: "text-green-400 bg-green-900/20 border-green-800/40" },
-            { label: "ChÆ°a phÃ¢n cÃ´ng", val: tasks.filter((t) => !t.assignee && t.status !== "done").length,  color: "text-blue-400 bg-blue-900/20 border-blue-800/40" },
+            { label: "Task trễ hạn",  val: tasks.filter(isOverdue).length,                                   color: "text-red-400 bg-red-900/20 border-red-800/40" },
+            { label: "Lỗi tồn đọng",  val: tasks.reduce((s, t) => s + (t.bugCount || 0), 0),                 color: "text-yellow-400 bg-yellow-900/20 border-yellow-800/40" },
+            { label: "Hoàn thành",    val: `${tasks.filter((t) => t.status === "done").length}/${tasks.length}`, color: "text-green-400 bg-green-900/20 border-green-800/40" },
+            { label: "Chưa phân công", val: tasks.filter((t) => !t.assignee && t.status !== "done").length,  color: "text-blue-400 bg-blue-900/20 border-blue-800/40" },
           ].map((p) => (
             <div key={p.label} className={`flex items-center gap-2 px-3 py-1.5 border rounded-xl text-xs ${p.color}`}>
               <span className="font-bold text-sm">{p.val}</span>
@@ -1048,15 +1049,15 @@ function ReportTab({ tasks, team, projectName }) {
         </div>
       </div>
 
-      {/* â”€â”€â”€ BIá»‚U Äá»’ â”€â”€â”€ */}
+      {/* ─── BIỂU ĐỒ ─── */}
       <div className="grid grid-cols-2 gap-5">
 
-        {/* Biá»ƒu Ä‘á»“ 1: Tráº¡ng thÃ¡i task */}
+        {/* Biểu đồ 1: Trạng thái task */}
         <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-white mb-0.5">Tá»· lá»‡ tráº¡ng thÃ¡i Task</h3>
-          <p className="text-xs text-gray-500 mb-3">PhÃ¢n bá»‘ cÃ´ng viá»‡c theo tráº¡ng thÃ¡i hiá»‡n táº¡i</p>
+          <h3 className="text-sm font-bold text-white mb-0.5">Tỷ lệ trạng thái Task</h3>
+          <p className="text-xs text-gray-500 mb-3">Phân bố công việc theo trạng thái hiện tại</p>
           {tasks.length === 0 ? (
-            <div className="flex items-center justify-center h-52 text-gray-600 text-sm">ChÆ°a cÃ³ task nÃ o</div>
+            <div className="flex items-center justify-center h-52 text-gray-600 text-sm">Chưa có task nào</div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -1081,12 +1082,12 @@ function ReportTab({ tasks, team, projectName }) {
           )}
         </div>
 
-        {/* Biá»ƒu Ä‘á»“ 2: Hiá»‡u suáº¥t thÃ nh viÃªn */}
+        {/* Biểu đồ 2: Hiệu suất thành viên */}
         <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-white mb-0.5">Hiá»‡u suáº¥t thÃ nh viÃªn</h3>
-          <p className="text-xs text-gray-500 mb-3">Táº§n suáº¥t commit vÃ  tá»· lá»‡ Pass/Fail test case</p>
+          <h3 className="text-sm font-bold text-white mb-0.5">Hiệu suất thành viên</h3>
+          <p className="text-xs text-gray-500 mb-3">Tần suất commit và tỷ lệ Pass/Fail test case</p>
           {team.length === 0 ? (
-            <div className="flex items-center justify-center h-52 text-gray-600 text-sm">ChÆ°a cÃ³ thÃ nh viÃªn</div>
+            <div className="flex items-center justify-center h-52 text-gray-600 text-sm">Chưa có thành viên</div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={memberPerfData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
@@ -1104,13 +1105,13 @@ function ReportTab({ tasks, team, projectName }) {
         </div>
       </div>
 
-      {/* â”€â”€â”€ AI RECOMMENDATIONS â”€â”€â”€ */}
+      {/* ─── AI RECOMMENDATIONS ─── */}
       <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
           <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-          <h3 className="text-sm font-bold text-white">PhÃ¢n tÃ­ch & Khuyáº¿n nghá»‹ tá»« AI</h3>
+          <h3 className="text-sm font-bold text-white">Phân tích & Khuyến nghị từ AI</h3>
           <span className="text-[10px] text-gray-500 ml-auto">
-            Cáº­p nháº­t: {new Date().toLocaleTimeString("vi-VN")}
+            Cập nhật: {new Date().toLocaleTimeString("vi-VN")}
           </span>
         </div>
 
@@ -1131,17 +1132,17 @@ function ReportTab({ tasks, team, projectName }) {
           })}
         </div>
 
-        {/* Báº£ng chi tiáº¿t thÃ nh viÃªn */}
+        {/* Bảng chi tiết thành viên */}
         {team.length > 0 && (
           <div>
             <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
-              Chi tiáº¿t hiá»‡u suáº¥t tá»«ng thÃ nh viÃªn
+              Chi tiết hiệu suất từng thành viên
             </p>
             <div className="overflow-x-auto rounded-xl border border-gray-800">
               <table className="w-full text-xs">
                 <thead className="bg-gray-900/60">
                   <tr>
-                    {["ThÃ nh viÃªn", "Task nháº­n", "HoÃ n thÃ nh", "Commits", "Pass %", "Fail %", "ÄÃ¡nh giÃ¡"].map((h) => (
+                    {["Thành viên", "Task nhận", "Hoàn thành", "Commits", "Pass %", "Fail %", "Đánh giá"].map((h) => (
                       <th key={h} className="text-left text-gray-500 py-2.5 px-4 font-medium whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
@@ -1165,7 +1166,7 @@ function ReportTab({ tasks, team, projectName }) {
                           m.fail >= 25 ? "bg-yellow-900/30 text-yellow-400 border border-yellow-800/50" :
                                          "bg-green-900/30 text-green-400 border border-green-800/50"
                         }`}>
-                          {m.fail >= 50 ? "Cáº§n há»— trá»£" : m.fail >= 25 ? "Cáº§n theo dÃµi" : "Tá»‘t"}
+                          {m.fail >= 50 ? "Cần hỗ trợ" : m.fail >= 25 ? "Cần theo dõi" : "Tốt"}
                         </span>
                       </td>
                     </tr>
@@ -1180,25 +1181,25 @@ function ReportTab({ tasks, team, projectName }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    CI/CD TAB
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 function CICDTab({ tasks, team }) {
 
-  /* Táº¡o lá»‹ch sá»­ commit giáº£ láº­p cÃ³ gáº¯n vá»›i task tháº­t */
+  /* Tạo lịch sử commit giả lập có gắn với task thật */
   const commitHistory = useMemo(() => {
     const statuses = ["success", "success", "success", "failed", "running"];
     const msgs = [
-      "feat: thÃªm chá»©c nÄƒng xÃ¡c thá»±c ngÆ°á»i dÃ¹ng",
-      "fix: sá»­a lá»—i validate form Ä‘Äƒng nháº­p",
-      "refactor: tÃ¡ch logic service layer",
-      "feat: tÃ­ch há»£p JWT authentication",
-      "fix: xá»­ lÃ½ exception NullPointerException",
-      "test: thÃªm unit test cho UserService",
-      "feat: hoÃ n thiá»‡n API quáº£n lÃ½ dá»± Ã¡n",
-      "fix: sá»­a lá»—i ngÃ y thÃ¡ng khÃ´ng Ä‘Ãºng Ä‘á»‹nh dáº¡ng",
-      "chore: cáº­p nháº­t dependencies",
-      "feat: thÃªm drag-drop cho Kanban board",
+      "feat: thêm chức năng xác thực người dùng",
+      "fix: sửa lỗi validate form đăng nhập",
+      "refactor: tách logic service layer",
+      "feat: tích hợp JWT authentication",
+      "fix: xử lý exception NullPointerException",
+      "test: thêm unit test cho UserService",
+      "feat: hoàn thiện API quản lý dự án",
+      "fix: sửa lỗi ngày tháng không đúng định dạng",
+      "chore: cập nhật dependencies",
+      "feat: thêm drag-drop cho Kanban board",
     ];
     const branches = ["main", "develop", "feature/auth", "feature/kanban", "hotfix/login"];
 
@@ -1233,7 +1234,7 @@ function CICDTab({ tasks, team }) {
       }
     });
 
-    // ThÃªm vÃ i commit khÃ´ng gáº¯n task náº¿u khÃ´ng cÃ³ team
+    // Thêm vài commit không gắn task nếu không có team
     if (team.length === 0) {
       for (let i = 0; i < 5; i++) {
         rows.push({
@@ -1257,9 +1258,9 @@ function CICDTab({ tasks, team }) {
   }, [tasks, team]);
 
   const statusConfig = {
-    success: { dot: "bg-green-500", text: "text-green-400", border: "border-green-800/40", bg: "bg-green-900/10", label: "ThÃ nh cÃ´ng", icon: "âœ“" },
-    failed:  { dot: "bg-red-500",   text: "text-red-400",   border: "border-red-800/40",   bg: "bg-red-900/10",   label: "Tháº¥t báº¡i",   icon: "âœ—" },
-    running: { dot: "bg-yellow-500 animate-pulse", text: "text-yellow-400", border: "border-yellow-800/40", bg: "bg-yellow-900/10", label: "Äang cháº¡y", icon: "â†º" },
+    success: { dot: "bg-green-500", text: "text-green-400", border: "border-green-800/40", bg: "bg-green-900/10", label: "Thành công", icon: "✓" },
+    failed:  { dot: "bg-red-500",   text: "text-red-400",   border: "border-red-800/40",   bg: "bg-red-900/10",   label: "Thất bại",   icon: "✗" },
+    running: { dot: "bg-yellow-500 animate-pulse", text: "text-yellow-400", border: "border-yellow-800/40", bg: "bg-yellow-900/10", label: "Đang chạy", icon: "↺" },
   };
 
   const totalPassed = commitHistory.reduce((s, c) => s + c.passTests, 0);
@@ -1270,12 +1271,12 @@ function CICDTab({ tasks, team }) {
   return (
     <div className="space-y-5">
 
-      {/* â”€â”€â”€ SUMMARY CARDS â”€â”€â”€ */}
+      {/* ─── SUMMARY CARDS ─── */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Tá»•ng builds",    val: commitHistory.length, color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
-          { label: "Build thÃ nh cÃ´ng", val: successBuilds,       color: "text-green-400",  border: "border-green-800/40",  bg: "bg-green-900/10" },
-          { label: "Build tháº¥t báº¡i",   val: failedBuilds,        color: "text-red-400",    border: "border-red-800/40",    bg: "bg-red-900/10" },
+          { label: "Tổng builds",    val: commitHistory.length, color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
+          { label: "Build thành công", val: successBuilds,       color: "text-green-400",  border: "border-green-800/40",  bg: "bg-green-900/10" },
+          { label: "Build thất bại",   val: failedBuilds,        color: "text-red-400",    border: "border-red-800/40",    bg: "bg-red-900/10" },
           { label: "Test case pass",   val: `${totalPassed}/${totalPassed + totalFailed}`, color: "text-purple-400", border: "border-purple-800/40", bg: "bg-purple-900/10" },
         ].map((c) => (
           <div key={c.label} className={`p-4 border ${c.border} ${c.bg} rounded-2xl`}>
@@ -1287,12 +1288,12 @@ function CICDTab({ tasks, team }) {
 
       <div className="grid grid-cols-3 gap-5">
 
-        {/* â”€â”€â”€ PIPELINE TIMELINE â”€â”€â”€ */}
+        {/* ─── PIPELINE TIMELINE ─── */}
         <div className="col-span-2 bg-[#0b0f1a] border border-gray-800 rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-800">
             <div>
-              <h3 className="text-sm font-bold text-white">Lá»‹ch sá»­ Äáº©y Code & CI/CD</h3>
-              <p className="text-[10px] text-gray-500 mt-0.5">Pipeline tá»± Ä‘á»™ng cháº¡y test sau má»—i commit</p>
+              <h3 className="text-sm font-bold text-white">Lịch sử Đẩy Code & CI/CD</h3>
+              <p className="text-[10px] text-gray-500 mt-0.5">Pipeline tự động chạy test sau mỗi commit</p>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
@@ -1329,15 +1330,15 @@ function CICDTab({ tasks, team }) {
                           </div>
                           <span>{c.author}</span>
                         </div>
-                        <span className="text-gray-700">â€¢</span>
-                        <span className="text-indigo-400/80">âŽ‡ {c.branch}</span>
-                        <span className="text-gray-700">â€¢</span>
+                        <span className="text-gray-700">•</span>
+                        <span className="text-indigo-400/80">⎇ {c.branch}</span>
+                        <span className="text-gray-700">•</span>
                         <span>{c.time}</span>
                         {c.relatedTask && (
                           <>
-                            <span className="text-gray-700">â€¢</span>
+                            <span className="text-gray-700">•</span>
                             <span className="text-blue-400/70 truncate max-w-[120px]" title={c.relatedTask.name}>
-                              ðŸ”— {c.relatedTask.name.slice(0, 18)}{c.relatedTask.name.length > 18 ? "â€¦" : ""}
+                              🔗 {c.relatedTask.name.slice(0, 18)}{c.relatedTask.name.length > 18 ? "…" : ""}
                             </span>
                           </>
                         )}
@@ -1372,14 +1373,14 @@ function CICDTab({ tasks, team }) {
           </div>
         </div>
 
-        {/* â”€â”€â”€ RIGHT PANEL â”€â”€â”€ */}
+        {/* ─── RIGHT PANEL ─── */}
         <div className="flex flex-col gap-4">
 
-          {/* Tá»· lá»‡ build theo thÃ nh viÃªn */}
+          {/* Tỷ lệ build theo thành viên */}
           <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-            <h4 className="text-xs font-bold text-white mb-3">Tá»· lá»‡ thÃ nh cÃ´ng theo thÃ nh viÃªn</h4>
+            <h4 className="text-xs font-bold text-white mb-3">Tỷ lệ thành công theo thành viên</h4>
             {team.length === 0 ? (
-              <p className="text-xs text-gray-600 italic">ChÆ°a cÃ³ thÃ nh viÃªn</p>
+              <p className="text-xs text-gray-600 italic">Chưa có thành viên</p>
             ) : (
               <div className="space-y-3">
                 {team.map((m) => {
@@ -1413,15 +1414,15 @@ function CICDTab({ tasks, team }) {
 
           {/* Failed builds */}
           <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-            <h4 className="text-xs font-bold text-red-400 mb-3">ðŸ”´ Builds tháº¥t báº¡i gáº§n Ä‘Ã¢y</h4>
+            <h4 className="text-xs font-bold text-red-400 mb-3">🔴 Builds thất bại gần đây</h4>
             {commitHistory.filter((c) => c.status === "failed").length === 0 ? (
-              <p className="text-xs text-gray-600 italic">KhÃ´ng cÃ³ build tháº¥t báº¡i. <span className="text-green-400">Xuáº¥t sáº¯c!</span></p>
+              <p className="text-xs text-gray-600 italic">Không có build thất bại. <span className="text-green-400">Xuất sắc!</span></p>
             ) : (
               <div className="space-y-2">
                 {commitHistory.filter((c) => c.status === "failed").slice(0, 4).map((c) => (
                   <div key={c.id} className="p-2.5 bg-red-900/10 border border-red-800/30 rounded-xl">
-                    <p className="text-xs text-red-300 font-medium truncate">{c.message.slice(0, 35)}â€¦</p>
-                    <p className="text-[10px] text-gray-500 mt-1">{c.author} â€¢ {c.failTests} test fail</p>
+                    <p className="text-xs text-red-300 font-medium truncate">{c.message.slice(0, 35)}…</p>
+                    <p className="text-[10px] text-gray-500 mt-1">{c.author} • {c.failTests} test fail</p>
                     <span className="font-mono text-[9px] text-gray-600">#{c.sha}</span>
                   </div>
                 ))}
@@ -1431,7 +1432,7 @@ function CICDTab({ tasks, team }) {
 
           {/* Pipeline stages legend */}
           <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-            <h4 className="text-xs font-bold text-white mb-3">CÃ¡c giai Ä‘oáº¡n Pipeline</h4>
+            <h4 className="text-xs font-bold text-white mb-3">Các giai đoạn Pipeline</h4>
             <div className="space-y-2">
               {[
                 { name: "Build & Compile", status: "success", desc: "Maven / Gradle build" },
@@ -1462,22 +1463,22 @@ function CICDTab({ tasks, team }) {
 function TabPlaceholder({ label }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-600 gap-3">
-      <div className="text-4xl opacity-30">ðŸš§</div>
+      <div className="text-4xl opacity-30">🚧</div>
       <p className="text-lg font-medium text-gray-500">Tab "{label}"</p>
-      <p className="text-sm">Chá»©c nÄƒng Ä‘ang Ä‘Æ°á»£c phÃ¡t triá»ƒn...</p>
+      <p className="text-sm">Chức năng đang được phát triển...</p>
     </div>
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    MEMBERS TAB
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
   const [emailQuery, setEmailQuery] = useState("");
   const [results,    setResults]    = useState([]);
   const [searching,  setSearching]  = useState(false);
-  const [searchDone, setSearchDone] = useState(false); // Ä‘Ã£ search xong chÆ°a
-  const [apiError,   setApiError]   = useState(false); // backend chÆ°a cháº¡y?
+  const [searchDone, setSearchDone] = useState(false); // đã search xong chưa
+  const [apiError,   setApiError]   = useState(false); // backend chưa chạy?
   const [showDrop,   setShowDrop]   = useState(false);
   const [inviting,   setInviting]   = useState(null);
   const [removing,   setRemoving]   = useState(null);
@@ -1512,12 +1513,12 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
           params: { email: emailQuery.trim(), size: 5 },
         });
         const data = res.data?.data ?? [];
-        // Loáº¡i bá» nhá»¯ng ngÆ°á»i Ä‘Ã£ lÃ  thÃ nh viÃªn
+        // Loại bỏ những người đã là thành viên
         const filtered = data.filter(
           (u) => !team.some((m) => String(m.id) === String(u.id))
         );
         setResults(filtered);
-        setShowDrop(true); // luÃ´n show â€” ká»ƒ cáº£ khi rá»—ng (hiá»ƒn "khÃ´ng tÃ¬m tháº¥y")
+        setShowDrop(true); // luôn show — kể cả khi rỗng (hiển "không tìm thấy")
       } catch {
         setResults([]);
         setApiError(true);
@@ -1532,14 +1533,14 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
   }, [emailQuery, team]);
 
 
-  /* Click ngoÃ i Ä‘Ã³ng dropdown */
+  /* Click ngoài đóng dropdown */
   useEffect(() => {
     const h = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setShowDrop(false); };
     document.addEventListener("mousedown", h);
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  /* Má»i thÃ nh viÃªn */
+  /* Mời thành viên */
   const handleInvite = async (user) => {
     setInviting(user.email);
     try {
@@ -1550,15 +1551,15 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
       setTeam(updated);
       localStorage.setItem("team", JSON.stringify(updated));
       setEmailQuery(""); setResults([]); setShowDrop(false);
-      showToast(`ÄÃ£ má»i ${user.fullName || user.username} vÃ o dá»± Ã¡n!`);
+      showToast(`Đã mời ${user.fullName || user.username} vào dự án!`);
     } catch (err) {
-      showToast(err.response?.data?.message || "Má»i tháº¥t báº¡i. Vui lÃ²ng thá»­ láº¡i.", "error");
+      showToast(err.response?.data?.message || "Mời thất bại. Vui lòng thử lại.", "error");
     } finally { setInviting(null); }
   };
 
-  /* XÃ³a thÃ nh viÃªn */
+  /* Xóa thành viên */
   const handleRemove = async (member) => {
-    if (!window.confirm(`XÃ³a ${member.name} khá»i dá»± Ã¡n?`)) return;
+    if (!window.confirm(`Xóa ${member.name} khỏi dự án?`)) return;
     setRemoving(member.id);
     try {
       const { default: apiClient } = await import("../services/api");
@@ -1566,19 +1567,19 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
       const updated = team.filter((m) => m.id !== member.id);
       setTeam(updated);
       localStorage.setItem("team", JSON.stringify(updated));
-      showToast(`ÄÃ£ xÃ³a ${member.name} khá»i dá»± Ã¡n.`);
+      showToast(`Đã xóa ${member.name} khỏi dự án.`);
     } catch (err) {
-      showToast(err.response?.data?.message || "XÃ³a tháº¥t báº¡i.", "error");
+      showToast(err.response?.data?.message || "Xóa thất bại.", "error");
     } finally { setRemoving(null); }
   };
 
-  /* Avatar mÃ u */
+  /* Avatar màu */
   const avatarColor = (name) => {
     const colors = ["bg-blue-600","bg-purple-600","bg-green-600","bg-orange-500","bg-pink-600","bg-teal-600"];
     return colors[(name?.charCodeAt(0) || 0) % colors.length];
   };
 
-  /* TÃ­nh stats tá»«ng thÃ nh viÃªn */
+  /* Tính stats từng thành viên */
   const memberStats = team.map((m) => {
     const myTasks = tasks.filter((t) => t.assignee?.id === m.id);
     const done    = myTasks.filter((t) => t.status === "done").length;
@@ -1607,16 +1608,16 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
             ? "bg-red-900 border border-red-700 text-red-200"
             : "bg-green-900 border border-green-700 text-green-200"
         }`}>
-          {toast.type === "error" ? "âœ—" : "âœ“"} {toast.msg}
+          {toast.type === "error" ? "✗" : "✓"} {toast.msg}
         </div>
       )}
 
       {/* HEADER */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">ThÃ nh ViÃªn Dá»± Ãn</h2>
+          <h2 className="text-xl font-bold text-white">Thành Viên Dự Án</h2>
           <p className="text-sm text-gray-400 mt-0.5">
-            {totalMembers} thÃ nh viÃªn Â· {avgProgress}% tiáº¿n Ä‘á»™ trung bÃ¬nh
+            {totalMembers} thành viên · {avgProgress}% tiến độ trung bình
           </p>
         </div>
       </div>
@@ -1624,10 +1625,10 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Tá»•ng thÃ nh viÃªn",  val: totalMembers,  color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
-          { label: "Tasks Ä‘Ã£ hoÃ n thÃ nh", val: `${totalDone}/${totalTasks}`, color: "text-green-400",  border: "border-green-800/40",  bg: "bg-green-900/10" },
-          { label: "Tiáº¿n Ä‘á»™ TB",       val: `${avgProgress}%`, color: "text-purple-400", border: "border-purple-800/40", bg: "bg-purple-900/10" },
-          { label: "Trá»… háº¡n",          val: memberStats.reduce((s,m)=>s+m.overdue,0), color: "text-red-400", border: "border-red-800/40", bg: "bg-red-900/10" },
+          { label: "Tổng thành viên",  val: totalMembers,  color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
+          { label: "Tasks đã hoàn thành", val: `${totalDone}/${totalTasks}`, color: "text-green-400",  border: "border-green-800/40",  bg: "bg-green-900/10" },
+          { label: "Tiến độ TB",       val: `${avgProgress}%`, color: "text-purple-400", border: "border-purple-800/40", bg: "bg-purple-900/10" },
+          { label: "Trễ hạn",          val: memberStats.reduce((s,m)=>s+m.overdue,0), color: "text-red-400", border: "border-red-800/40", bg: "bg-red-900/10" },
         ].map((c) => (
           <div key={c.label} className={`p-4 border ${c.border} ${c.bg} rounded-2xl`}>
             <p className={`text-2xl font-black tabular-nums ${c.color}`}>{c.val}</p>
@@ -1636,12 +1637,12 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
         ))}
       </div>
 
-      {/* INVITE â€” chá»‰ owner tháº¥y */}
+      {/* INVITE — chỉ owner thấy */}
       {isOwner && (
         <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
           <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-            <span className="text-blue-400 text-lg">ï¼‹</span>
-            Má»i ThÃ nh ViÃªn Má»›i
+            <span className="text-blue-400 text-lg">＋</span>
+            Mời Thành Viên Mới
           </h3>
 
           <div className="relative" ref={dropRef}>
@@ -1658,7 +1659,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                 value={emailQuery}
                 onChange={(e) => { setEmailQuery(e.target.value); }}
                 onFocus={() => emailQuery.trim().length >= 2 && setShowDrop(true)}
-                placeholder="Nháº­p email Ä‘á»ƒ tÃ¬m kiáº¿m thÃ nh viÃªn..."
+                placeholder="Nhập email để tìm kiếm thành viên..."
                 className="w-full pl-10 pr-10 py-3 bg-black border border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-white placeholder-gray-500 transition"
               />
               {/* Spinner */}
@@ -1671,7 +1672,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                   onClick={() => { setEmailQuery(""); setShowDrop(false); setResults([]); setSearchDone(false); }}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-lg leading-none transition"
                 >
-                  Ã—
+                  ×
                 </button>
               )}
             </div>
@@ -1683,11 +1684,11 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                 {/* Loi API */}
                 {apiError && (
                   <div className="flex items-start gap-3 px-5 py-4">
-                    <span className="text-xl mt-0.5">âš ï¸</span>
+                    <span className="text-xl mt-0.5">⚠️</span>
                     <div>
-                      <p className="text-sm font-medium text-yellow-400">KhÃ´ng káº¿t ná»‘i Ä‘Æ°á»£c tá»›i server</p>
+                      <p className="text-sm font-medium text-yellow-400">Không kết nối được tới server</p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Vui lÃ²ng khá»Ÿi Ä‘á»™ng Spring Boot rá»“i thá»­ láº¡i.
+                        Vui lòng khởi động Spring Boot rồi thử lại.
                       </p>
                     </div>
                   </div>
@@ -1696,14 +1697,14 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                 {/* Khong tim thay */}
                 {!apiError && searchDone && results.length === 0 && (
                   <div className="flex items-center gap-3 px-5 py-4">
-                    <span className="text-xl">ðŸ”</span>
+                    <span className="text-xl">🔍</span>
                     <div>
                       <p className="text-sm text-gray-300">
-                        KhÃ´ng tÃ¬m tháº¥y ngÆ°á»i dÃ¹ng vá»›i email{" "}
+                        Không tìm thấy người dùng với email{" "}
                         <span className="text-white font-medium">&ldquo;{emailQuery}&rdquo;</span>
                       </p>
                       <p className="text-xs text-gray-500 mt-0.5">
-                        Kiá»ƒm tra láº¡i email hoáº·c ngÆ°á»i dÃ¹ng chÆ°a Ä‘Äƒng kÃ½ tÃ i khoáº£n.
+                        Kiểm tra lại email hoặc người dùng chưa đăng ký tài khoản.
                       </p>
                     </div>
                   </div>
@@ -1738,7 +1739,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                     <button
                       onClick={() => handleInvite(u)}
                       disabled={inviting === u.email}
-                      title="ThÃªm vÃ o nhÃ³m"
+                      title="Thêm vào nhóm"
                       className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center
                         font-bold text-lg transition-all shadow-md
                         ${
@@ -1750,7 +1751,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                       {inviting === u.email ? (
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                       ) : (
-                        <span className="leading-none">ï¼‹</span>
+                        <span className="leading-none">＋</span>
                       )}
                     </button>
                   </div>
@@ -1764,9 +1765,9 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
       {/* MEMBERS GRID */}
       {team.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3">
-          <div className="text-5xl opacity-20">ðŸ‘¥</div>
-          <p className="text-gray-500 font-medium">ChÆ°a cÃ³ thÃ nh viÃªn nÃ o trong dá»± Ã¡n</p>
-          {isOwner && <p className="text-sm">Sá»­ dá»¥ng Ã´ tÃ¬m kiáº¿m phÃ­a trÃªn Ä‘á»ƒ má»i thÃ nh viÃªn</p>}
+          <div className="text-5xl opacity-20">👥</div>
+          <p className="text-gray-500 font-medium">Chưa có thành viên nào trong dự án</p>
+          {isOwner && <p className="text-sm">Sử dụng ô tìm kiếm phía trên để mời thành viên</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -1775,7 +1776,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
               key={m.id}
               className="bg-[#0b0f1a] border border-gray-800 hover:border-blue-500/50 rounded-2xl p-5 transition-all"
             >
-              {/* Avatar + tÃªn + badge */}
+              {/* Avatar + tên + badge */}
               <div className="flex items-start gap-3 mb-4">
                 <div className={`w-11 h-11 rounded-full ${avatarColor(m.name)} flex items-center justify-center text-base font-bold text-white flex-shrink-0`}>
                   {m.name?.charAt(0)?.toUpperCase()}
@@ -1785,20 +1786,20 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                     <h3 className="font-semibold text-white truncate">{m.name}</h3>
                     {m.overdue > 0 && (
                       <span className="text-[10px] px-2 py-0.5 bg-red-900/40 border border-red-700/50 text-red-400 rounded-full font-semibold">
-                        {m.overdue} trá»… háº¡n
+                        {m.overdue} trễ hạn
                       </span>
                     )}
                   </div>
                   <p className="text-xs text-gray-400 truncate mt-0.5">{m.email || ""}</p>
                 </div>
 
-                {/* NÃºt xÃ³a â€” chá»‰ owner */}
+                {/* Nút xóa — chỉ owner */}
                 {isOwner && (
                   <button
                     onClick={() => handleRemove(m)}
                     disabled={removing === m.id}
                     className="flex-shrink-0 p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition"
-                    title="XÃ³a thÃ nh viÃªn"
+                    title="Xóa thành viên"
                   >
                     {removing === m.id ? (
                       <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
@@ -1814,7 +1815,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
               {/* Progress bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-gray-400">Tiáº¿n Ä‘á»™</span>
+                  <span className="text-gray-400">Tiến độ</span>
                   <span className={`font-bold ${
                     m.pct >= 80 ? "text-green-400" : m.pct >= 40 ? "text-blue-400" : "text-yellow-400"
                   }`}>{m.pct}%</span>
@@ -1830,10 +1831,10 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
               {/* Stats grid */}
               <div className="grid grid-cols-4 gap-2 text-center">
                 {[
-                  { val: m.total,      label: "Tá»•ng",    color: "text-gray-300" },
+                  { val: m.total,      label: "Tổng",    color: "text-gray-300" },
                   { val: m.done,       label: "Xong",    color: "text-green-400" },
-                  { val: m.inProgress, label: "Äang lÃ m", color: "text-blue-400" },
-                  { val: m.bugs,       label: "Lá»—i",     color: m.bugs > 0 ? "text-red-400" : "text-gray-600" },
+                  { val: m.inProgress, label: "Đang làm", color: "text-blue-400" },
+                  { val: m.bugs,       label: "Lỗi",     color: m.bugs > 0 ? "text-red-400" : "text-gray-600" },
                 ].map((s) => (
                   <div key={s.label} className="bg-black/40 rounded-xl py-2">
                     <p className={`text-base font-bold ${s.color}`}>{s.val}</p>
@@ -1842,10 +1843,10 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                 ))}
               </div>
 
-              {/* Task list (náº¿u cÃ³) */}
+              {/* Task list (nếu có) */}
               {m.myTasks.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-gray-800">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">CÃ´ng viá»‡c Ä‘ang phá»¥ trÃ¡ch</p>
+                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Công việc đang phụ trách</p>
                   <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
                     {m.myTasks.map((t) => (
                       <div key={t.id} className="flex items-center gap-2">
@@ -1857,8 +1858,8 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                         <span className={`text-xs truncate flex-1 ${
                           isOverdue(t) ? "text-red-400" : "text-gray-400"
                         }`}>{t.name}</span>
-                        {t.status === "done" && <span className="text-[10px] text-green-500 flex-shrink-0">âœ“</span>}
-                        {isOverdue(t)       && <span className="text-[10px] text-red-400 flex-shrink-0">âš </span>}
+                        {t.status === "done" && <span className="text-[10px] text-green-500 flex-shrink-0">✓</span>}
+                        {isOverdue(t)       && <span className="text-[10px] text-red-400 flex-shrink-0">⚠</span>}
                       </div>
                     ))}
                   </div>
@@ -1872,9 +1873,9 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
   );
 }
 
-/* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+/* ═══════════════════════════════════════
    MAIN
-â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+═══════════════════════════════════════ */
 export default function ProjectDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -1888,7 +1889,10 @@ export default function ProjectDetailPage() {
   const [team, setTeam] = useState([]);
   const [activeId, setActiveId] = useState(null);
 
-  /* Modal táº¡o/sá»­a task */
+  const currentUser = useAuthStore((s) => s.user);
+  const isLeader = currentUser?.role === "PROJECT_MANAGER" || currentUser?.role === "ADMIN";
+
+  /* Modal tạo/sửa task */
   const [modal, setModal] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [formName, setFormName] = useState("");
@@ -1908,7 +1912,7 @@ export default function ProjectDetailPage() {
   const [newCol, setNewCol] = useState(false);
   const [newColName, setNewColName] = useState("");
 
-  /* â”€â”€ LOAD â”€â”€ */
+  /* ── LOAD ── */
   useEffect(() => {
     const projects = JSON.parse(localStorage.getItem("projects")) || [];
     const current = projects.find((p) => p.id === id);
@@ -1919,10 +1923,10 @@ export default function ProjectDetailPage() {
 
     if (cols.length === 0) {
       const init = [
-        { id: "todo",   name: "Chá» xá»­ lÃ½" },
-        { id: "doing",  name: "Äang thá»±c hiá»‡n" },
-        { id: "review", name: "Äang xem xÃ©t" },
-        { id: "done",   name: "HoÃ n thÃ nh" },
+        { id: "todo",   name: "Chờ xử lý" },
+        { id: "doing",  name: "Đang thực hiện" },
+        { id: "review", name: "Đang xem xét" },
+        { id: "done",   name: "Hoàn thành" },
       ];
       setColumns(init);
       localStorage.setItem("columns_" + id, JSON.stringify(init));
@@ -1936,7 +1940,7 @@ export default function ProjectDetailPage() {
   const saveTasks = (data) => { setTasks(data); localStorage.setItem("tasks_" + id, JSON.stringify(data)); };
   const saveColumns = (data) => { setColumns(data); localStorage.setItem("columns_" + id, JSON.stringify(data)); };
 
-  /* â”€â”€ TASK CRUD â”€â”€ */
+  /* ── TASK CRUD ── */
   const openCreate = (colId) => {
     setEditTask({ status: colId });
     setFormName(""); setFormAssignee(""); setFormScore(""); setFormBugCount(""); setFormDeadline("");
@@ -1949,15 +1953,33 @@ export default function ProjectDetailPage() {
     const bugVal   = formBugCount !== "" ? Math.max(0, parseInt(formBugCount) || 0) : 0;
     const assigneeObj = team.find((m) => m.id === formAssignee) || null;
 
+    const notifyAssignee = (taskName, assignee) => {
+      if (!assignee || !currentUser || !isLeader) return;
+      const notifyKey = `sys_notifs_${String(assignee.id)}`;
+      const existing = JSON.parse(localStorage.getItem(notifyKey) || "[]");
+      existing.unshift({
+        id: `task-assigned-${taskName}-${Date.now()}`,
+        type: "task_assigned",
+        title: "Bạn vừa được giao việc",
+        message: `${currentUser.fullName || currentUser.username} đã giao cho bạn công việc "${taskName}".`,
+        createdAt: Date.now(),
+      });
+      localStorage.setItem(notifyKey, JSON.stringify(existing));
+    };
+
     let updated;
     if (editTask?.id) {
+      const oldTask = tasks.find((t) => t.id === editTask.id);
       updated = tasks.map((t) =>
         t.id === editTask.id
           ? { ...t, name: formName, assignee: assigneeObj, score: scoreVal, bugCount: bugVal, deadline: formDeadline || null }
           : t
       );
+      if (assigneeObj && oldTask?.assignee?.id !== assigneeObj.id) {
+        notifyAssignee(formName, assigneeObj);
+      }
     } else {
-      updated = [...tasks, {
+      const newTask = {
         id: Date.now().toString(),
         name: formName,
         status: editTask.status,
@@ -1965,7 +1987,11 @@ export default function ProjectDetailPage() {
         score: scoreVal,
         bugCount: bugVal,
         deadline: formDeadline || null,
-      }];
+      };
+      updated = [...tasks, newTask];
+      if (assigneeObj) {
+        notifyAssignee(formName, assigneeObj);
+      }
     }
     saveTasks(updated);
     setModal(false);
@@ -1973,18 +1999,38 @@ export default function ProjectDetailPage() {
 
   const deleteTask = (task) => saveTasks(tasks.filter((t) => t.id !== task.id));
 
-  const changeAssignee = (task, member) => saveTasks(tasks.map((t) =>
-    t.id === task.id ? { ...t, assignee: t.assignee?.id === member.id ? null : member } : t
-  ));
+  const changeAssignee = (task, member) => {
+    const updated = tasks.map((t) =>
+      t.id === task.id
+        ? { ...t, assignee: t.assignee?.id === member.id ? null : member }
+        : t
+    );
+    saveTasks(updated);
+
+    if (!currentUser || !isLeader) return;
+    const newAssignee = task.assignee?.id === member.id ? null : member;
+    if (newAssignee) {
+      const notifyKey = `sys_notifs_${String(newAssignee.id)}`;
+      const existing = JSON.parse(localStorage.getItem(notifyKey) || "[]");
+      existing.unshift({
+        id: `task-assigned-${task.id}-${Date.now()}`,
+        type: "task_assigned",
+        title: "Bạn vừa được giao việc",
+        message: `${currentUser.fullName || currentUser.username} đã giao cho bạn công việc "${task.name}".`,
+        createdAt: Date.now(),
+      });
+      localStorage.setItem(notifyKey, JSON.stringify(existing));
+    }
+  };
 
   const changeScore = (task, val) => saveTasks(tasks.map((t) => t.id === task.id ? { ...t, score: val } : t));
 
   const openAI = (task) => {
-    setChatQuestion(`TÃ´i cáº§n há»— trá»£ vá»›i task "${task.name}"${task.bugCount > 0 ? ` â€” Ä‘ang cÃ³ ${task.bugCount} lá»—i kiá»ƒm thá»­` : ""}. HÃ£y giÃºp tÃ´i phÃ¢n tÃ­ch váº¥n Ä‘á».`);
+    setChatQuestion(`Tôi cần hỗ trợ với task "${task.name}"${task.bugCount > 0 ? ` — đang có ${task.bugCount} lỗi kiểm thử` : ""}. Hãy giúp tôi phân tích vấn đề.`);
     setChatOpen(true);
   };
 
-  /* â”€â”€ COLUMN â”€â”€ */
+  /* ── COLUMN ── */
   const addColumn = () => {
     if (!newColName.trim()) return;
     saveColumns([...columns, { id: Date.now().toString(), name: newColName }]);
@@ -1993,7 +2039,7 @@ export default function ProjectDetailPage() {
   const renameColumn = (colId, name) => saveColumns(columns.map((c) => c.id === colId ? { ...c, name } : c));
   const deleteColumn = (colId) => { saveColumns(columns.filter((c) => c.id !== colId)); saveTasks(tasks.filter((t) => t.status !== colId)); };
 
-  /* â”€â”€ DRAG â”€â”€ */
+  /* ── DRAG ── */
   const handleDragStart = ({ active }) => setActiveId(active.id);
 
   const handleDragEnd = ({ active, over }) => {
@@ -2022,14 +2068,14 @@ export default function ProjectDetailPage() {
 
   const activeDragTask = tasks.find((t) => t.id === activeId);
 
-  /* â”€â”€ RENDER â”€â”€ */
+  /* ── RENDER ── */
   return (
     <div className="min-h-screen bg-[#070a12] text-white flex flex-col">
 
       {/* HEADER */}
       <div className="flex items-center gap-4 px-6 pt-5 pb-0">
         <button onClick={() => navigate("/project")} className="text-blue-500 hover:underline text-sm">
-          â† Quay láº¡i Dá»± Ãn
+          ← Quay lại Dự Án
         </button>
         <h1 className="text-xl font-bold text-white">{projectName}</h1>
       </div>
@@ -2118,12 +2164,12 @@ export default function ProjectDetailPage() {
                       onChange={(e) => setNewColName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && addColumn()}
                       className="w-full bg-black border border-gray-600 px-2 py-1.5 mb-3 rounded-lg text-sm outline-none"
-                      placeholder="TÃªn cá»™t..."
+                      placeholder="Tên cột..."
                       autoFocus
                     />
                     <div className="flex gap-2">
-                      <button onClick={addColumn} className="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-sm">ThÃªm</button>
-                      <button onClick={() => setNewCol(false)} className="px-3 py-1.5 text-gray-400 hover:text-white text-sm">Há»§y</button>
+                      <button onClick={addColumn} className="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-sm">Thêm</button>
+                      <button onClick={() => setNewCol(false)} className="px-3 py-1.5 text-gray-400 hover:text-white text-sm">Hủy</button>
                     </div>
                   </div>
                 ) : (
@@ -2149,32 +2195,32 @@ export default function ProjectDetailPage() {
         )}
       </div>
 
-      {/* â”€â”€ MODAL Táº O / Sá»¬A CÃ”NG VIá»†C â”€â”€ */}
+      {/* ── MODAL TẠO / SỬA CÔNG VIỆC ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-[#0b0f1a] border border-gray-700 rounded-2xl w-[440px] shadow-2xl">
             <div className="flex justify-between items-center px-5 pt-5 pb-4 border-b border-gray-800">
-              <h2 className="font-bold text-base">{editTask?.id ? "Chá»‰nh sá»­a cÃ´ng viá»‡c" : "Táº¡o cÃ´ng viá»‡c"}</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-white">âœ•</button>
+              <h2 className="font-bold text-base">{editTask?.id ? "Chỉnh sửa công việc" : "Tạo công việc"}</h2>
+              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-white">✕</button>
             </div>
 
             <div className="px-5 py-4 space-y-4">
-              {/* TÃªn */}
+              {/* Tên */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">TÃªn cÃ´ng viá»‡c <span className="text-red-400">*</span></label>
+                <label className="text-sm text-gray-400 block mb-1">Tên công việc <span className="text-red-400">*</span></label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && saveTask()}
                   className="w-full p-2.5 bg-black border border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-white"
-                  placeholder="Nháº­p tÃªn cÃ´ng viá»‡c..."
+                  placeholder="Nhập tên công việc..."
                   autoFocus
                 />
               </div>
 
               {/* Deadline */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Háº¡n hoÃ n thÃ nh</label>
+                <label className="text-sm text-gray-400 block mb-1">Hạn hoàn thành</label>
                 <input
                   type="date"
                   value={formDeadline}
@@ -2184,9 +2230,9 @@ export default function ProjectDetailPage() {
                 />
               </div>
 
-              {/* Äiá»ƒm 1-10 */}
+              {/* Điểm 1-10 */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Äiá»ƒm Ä‘á»™ khÃ³ <span className="text-gray-600 text-xs">(1 = dá»…, 10 = khÃ³)</span></label>
+                <label className="text-sm text-gray-400 block mb-1">Điểm độ khó <span className="text-gray-600 text-xs">(1 = dễ, 10 = khó)</span></label>
                 <div className="flex gap-2 flex-wrap">
                   {[1,2,3,4,5,6,7,8,9,10].map((n) => (
                     <button
@@ -2205,11 +2251,11 @@ export default function ProjectDetailPage() {
                 </div>
               </div>
 
-              {/* Sá»‘ lá»—i kiá»ƒm thá»­ */}
+              {/* Số lỗi kiểm thử */}
               <div>
                 <label className="text-sm text-gray-400 block mb-1">
-                  Sá»‘ lá»—i kiá»ƒm thá»­ tá»“n Ä‘á»ng
-                  <span className="text-gray-600 text-xs ml-1">(hiá»‡n trÃªn tháº» náº¿u &gt; 0)</span>
+                  Số lỗi kiểm thử tồn đọng
+                  <span className="text-gray-600 text-xs ml-1">(hiện trên thẻ nếu &gt; 0)</span>
                 </label>
                 <input
                   type="number" min={0}
@@ -2220,11 +2266,11 @@ export default function ProjectDetailPage() {
                 />
               </div>
 
-              {/* NgÆ°á»i thá»±c hiá»‡n */}
+              {/* Người thực hiện */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">NgÆ°á»i thá»±c hiá»‡n</label>
+                <label className="text-sm text-gray-400 block mb-1">Người thực hiện</label>
                 {team.length === 0
-                  ? <p className="text-xs text-gray-600 italic">ChÆ°a cÃ³ thÃ nh viÃªn nÃ o.</p>
+                  ? <p className="text-xs text-gray-600 italic">Chưa có thành viên nào.</p>
                   : (
                     <div className="flex flex-wrap gap-2">
                       {team.map((m) => {
@@ -2255,16 +2301,16 @@ export default function ProjectDetailPage() {
             {/* Footer modal */}
             <div className="flex justify-between items-center px-5 pb-5">
               <button
-                onClick={() => { openAI({ name: formName || "cÃ´ng viá»‡c nÃ y", bugCount: parseInt(formBugCount) || 0 }); setModal(false); }}
+                onClick={() => { openAI({ name: formName || "công việc này", bugCount: parseInt(formBugCount) || 0 }); setModal(false); }}
                 className="flex items-center gap-2 px-3 py-2 bg-indigo-700/30 hover:bg-indigo-700/50 border border-indigo-600/50 rounded-xl text-xs text-indigo-300 transition"
               >
-                âœ¨ Nhá» Trá»£ lÃ½ AI há»— trá»£
+                ✨ Nhờ Trợ lý AI hỗ trợ
               </button>
 
               <div className="flex gap-2">
-                <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Há»§y</button>
+                <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Hủy</button>
                 <button onClick={saveTask} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold">
-                  {editTask?.id ? "LÆ°u thay Ä‘á»•i" : "Táº¡o cÃ´ng viá»‡c"}
+                  {editTask?.id ? "Lưu thay đổi" : "Tạo công việc"}
                 </button>
               </div>
             </div>
@@ -2279,12 +2325,12 @@ export default function ProjectDetailPage() {
         initialQuestion={chatQuestion}
       />
 
-      {/* NÃºt má»Ÿ chatbot ná»•i (khi Ä‘Ã³ng) */}
+      {/* Nút mở chatbot nổi (khi đóng) */}
       {!chatOpen && (
         <button
           onClick={() => { setChatQuestion(""); setChatOpen(true); }}
           className="fixed bottom-6 right-6 z-[100] w-13 h-13 p-3.5 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-full shadow-2xl hover:scale-110 transition-transform"
-          title="Má»Ÿ Trá»£ lÃ½ AI"
+          title="Mở Trợ lý AI"
         >
           <svg viewBox="0 0 24 24" fill="none" className="w-6 h-6 text-white" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
