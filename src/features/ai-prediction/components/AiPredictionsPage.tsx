@@ -13,3 +13,5 @@ const AiPredictionsPage = () => {
 }
 
 export default AiPredictionsPage
+
+
