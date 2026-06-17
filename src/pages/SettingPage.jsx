@@ -9,11 +9,13 @@ export default function SettingPage() {
     localStorage.getItem("theme") || "dark"
   );
 
-  /* ================= THEME FAKE ================= */
+  /* ================= THEME ================= */
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-    document.documentElement.classList.toggle("light", theme === "light");
-
+    if (theme === "dark") {
+      document.documentElement.classList.add("dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+    }
     localStorage.setItem("theme", theme);
   }, [theme]);
 
@@ -31,30 +33,30 @@ export default function SettingPage() {
   };
 
   return (
-    <div className="text-white max-w-xl">
+    <div className="text-gray-900 dark:text-white max-w-xl">
 
       <h1 className="text-2xl font-bold mb-6">Cài Đặt</h1>
 
       {/* ================= THEME ================= */}
-      <div className="bg-[#0b0f1a] border border-gray-800 p-4 rounded mb-6">
+      <div className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-800 p-4 rounded mb-6">
 
         <h2 className="font-semibold mb-3">Giao diện</h2>
 
         <button
           onClick={toggleTheme}
-          className="px-4 py-2 bg-blue-600 rounded text-white"
+          className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-white transition"
         >
           Chuyển sang chế độ {theme === "dark" ? "Sáng" : "Tối"}
         </button>
 
-        <p className="text-gray-400 text-sm mt-2">
+        <p className="text-gray-400 dark:text-gray-400 text-sm mt-2">
           Hiện tại: {theme === "dark" ? "Tối" : "Sáng"}
         </p>
 
       </div>
 
       {/* ================= PASSWORD UI ONLY ================= */}
-      <div className="bg-[#0b0f1a] border border-gray-800 p-4 rounded">
+      <div className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-800 p-4 rounded">
 
         <h2 className="font-semibold mb-3">Đổi mật khẩu</h2>
 
@@ -63,7 +65,7 @@ export default function SettingPage() {
           placeholder="Mật khẩu cũ"
           value={oldPass}
           onChange={(e) => setOldPass(e.target.value)}
-          className="w-full mb-2 p-2 bg-black border border-gray-700 rounded"
+          className="w-full mb-2 p-2 bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-white placeholder:text-gray-500"
         />
 
         <input
@@ -71,18 +73,18 @@ export default function SettingPage() {
           placeholder="Mật khẩu mới"
           value={newPass}
           onChange={(e) => setNewPass(e.target.value)}
-          className="w-full mb-3 p-2 bg-black border border-gray-700 rounded"
+          className="w-full mb-3 p-2 bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 rounded text-gray-900 dark:text-white placeholder:text-gray-500"
         />
 
         <button
           onClick={handleChangePassword}
-          className="px-4 py-2 bg-green-600 rounded text-white"
+          className="px-4 py-2 bg-green-600 hover:bg-green-500 rounded text-white transition"
         >
           Lưu
         </button>
 
         {msg && (
-          <p className="mt-3 text-sm text-gray-300">{msg}</p>
+          <p className="mt-3 text-sm text-gray-300 dark:text-gray-300">{msg}</p>
         )}
 
       </div>
@@ -90,3 +92,4 @@ export default function SettingPage() {
     </div>
   );
 }
+

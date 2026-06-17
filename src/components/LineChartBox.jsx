@@ -10,9 +10,9 @@ import {
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-black/80 backdrop-blur-md text-white px-3 py-2 rounded-lg border border-gray-700 shadow-lg">
+      <div className="bg-gray-100/80 dark:bg-black/80 backdrop-blur-md text-gray-900 dark:text-white px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg">
         <p className="text-sm font-semibold">{label}</p>
-        <p className="text-sm text-gray-300">
+        <p className="text-sm text-gray-600 dark:text-gray-300">
           Giá trị:{" "}
           <span className="text-blue-400 font-bold">
             {payload[0].value}
@@ -26,8 +26,8 @@ const CustomTooltip = ({ active, payload, label }) => {
 
 export default function LineChartBox({ data }) {
   return (
-    <div className="bg-[#0b0f1a] p-4 rounded-xl border border-gray-800 shadow-lg">
-      <h3 className="mb-4 font-semibold text-white">
+    <div className="bg-white dark:bg-[#0b0f1a] p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg">
+      <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
         Hoạt Động Nhóm
       </h3>
 
@@ -58,3 +58,4 @@ export default function LineChartBox({ data }) {
     </div>
   );
 }
+

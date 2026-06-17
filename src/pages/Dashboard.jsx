@@ -43,8 +43,8 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-black text-white flex items-center justify-center">
-        <div className="animate-pulse text-gray-400">
+      <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white flex items-center justify-center">
+        <div className="animate-pulse text-gray-500 dark:text-gray-400">
           Đang tải bảng điều khiển...
         </div>
       </div>
@@ -52,19 +52,19 @@ export default function Dashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white flex">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white flex">
 
       {/* Main */}
       <div className="flex-1 p-6 space-y-6">
 
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-bold text-white">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             Bảng Điều Khiển
           </h1>
 
-          <p className="text-gray-400 mt-1">
-            Chào mừng trở lại, <span className="text-white font-semibold">{user?.fullName || user?.username || "bạn"}</span>! Đây là tổng quan dự án của bạn.
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Chào mừng trở lại, <span className="text-gray-900 dark:text-white font-semibold">{user?.fullName || user?.username || "bạn"}</span>! Đây là tổng quan dự án của bạn.
           </p>
         </div>
 
@@ -89,3 +89,4 @@ export default function Dashboard() {
     </div>
   );
 }
+

@@ -24,15 +24,15 @@ export default function ProjectCard({ project }) {
   return (
     <div
       onClick={() => navigate(`/project/${project.id}`)}
-      className="bg-[#0b0f1a] border border-gray-800 rounded-xl p-4 hover:border-blue-500 transition cursor-pointer group"
+      className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-800 rounded-xl p-4 hover:border-blue-500 transition cursor-pointer group"
     >
       {/* Header */}
       <div className="flex justify-between items-start mb-2">
-        <h2 className="text-lg font-bold text-white group-hover:text-blue-400 transition line-clamp-1">
+        <h2 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-500 dark:group-hover:text-blue-400 transition line-clamp-1">
           {project.name}
         </h2>
         {project.projectCode && (
-          <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded ml-2 flex-shrink-0">
+          <span className="text-xs text-gray-600 dark:text-gray-500 bg-gray-200 dark:bg-gray-800 px-2 py-0.5 rounded ml-2 flex-shrink-0">
             {project.projectCode}
           </span>
         )}
@@ -46,7 +46,7 @@ export default function ProjectCard({ project }) {
       </div>
 
       {/* Progress bar */}
-      <div className="w-full h-1.5 bg-gray-800 rounded-full mb-3">
+      <div className="w-full h-1.5 bg-gray-300 dark:bg-gray-800 rounded-full mb-3">
         <div
           className="h-1.5 bg-blue-500 rounded-full transition-all"
           style={{ width: `${project.progress || 0}%` }}
@@ -54,7 +54,7 @@ export default function ProjectCard({ project }) {
       </div>
 
       {/* Footer: nhiệm vụ - thành viên - ngày */}
-      <div className="flex text-xs text-gray-400 items-center">
+      <div className="flex text-xs text-gray-600 dark:text-gray-400 items-center">
         <div className="flex items-center gap-1 w-1/3">
           <span>{project.taskCount ?? 0} nhiệm vụ</span>
         </div>
@@ -63,7 +63,7 @@ export default function ProjectCard({ project }) {
           <span>{project.memberCount ?? 0} thành viên</span>
         </div>
 
-        <div className="w-1/3 text-right text-gray-500">
+        <div className="w-1/3 text-right text-gray-500 dark:text-gray-500">
           {project.startDate
             ? new Date(project.startDate).toLocaleDateString("vi-VN")
             : "—"}
@@ -72,3 +72,4 @@ export default function ProjectCard({ project }) {
     </div>
   );
 }
+

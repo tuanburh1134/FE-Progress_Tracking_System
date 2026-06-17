@@ -27,7 +27,7 @@ export default function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/team" element={<TeamPage />} />
         {/* PROFILE */}
-        <Route path="/profile" element={<profilePage />} />
+        <Route path="/profile" element={<ProfilePage />} />
         {/* SETTINGS */}
         <Route path="/settings" element={<SettingPage />} />
 
@@ -69,3 +69,4 @@ export default function App() {
     </Routes>
   );
 }
+

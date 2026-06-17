@@ -290,8 +290,8 @@ export default function Header({ open }) {
   return (
     <div
       className="
-        fixed top-0 right-0 h-14 bg-[#0b0f1a]
-        border-b border-gray-800 flex items-center justify-between
+        fixed top-0 right-0 h-14 bg-white dark:bg-[#0b0f1a]
+        border-b border-gray-200 dark:border-gray-800 flex items-center justify-between
         px-4 z-30
       "
       style={{
@@ -301,7 +301,7 @@ export default function Header({ open }) {
       }}
     >
       {/* LEFT */}
-      <div className="text-white font-bold text-lg">
+      <div className="text-gray-900 dark:text-white font-bold text-lg">
         {!open ? "ProjectHub" : ""}
       </div>
 
@@ -313,7 +313,7 @@ export default function Header({ open }) {
           <button
             id="btn-inbox"
             onClick={() => setIsOpenNotification((v) => !v)}
-            className="text-gray-300 hover:text-white text-xl relative p-1 transition duration-200"
+            className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-xl relative p-1 transition duration-200"
           >
             <FiBell />
             {unreadCount > 0 && (
@@ -328,25 +328,26 @@ export default function Header({ open }) {
           </button>
 
           {/* ── DROPDOWN ─────────────────────────────────────────── */}
-          {isOpenNotification && (
-            <div
-              className="
-                absolute right-0 mt-3 w-[360px] bg-[#0f1422] border border-gray-800
-                rounded-xl shadow-2xl z-50 overflow-hidden
-                animate-[fadeIn_.15s_ease]
-              "
-              style={{ animation: "slideDown .15s ease" }}
-            >
-              {/* Header */}
-              <div className="px-4 py-3 bg-[#121829] border-b border-gray-800 flex items-center justify-between">
-                <span className="font-bold text-white text-sm">Hòm thư</span>
-                <span className="text-[11px] text-gray-400 bg-gray-800/80 px-2 py-0.5 rounded-full">
-                  {totalAll === 0 ? "Không có gì mới" : `${totalAll} thông báo`}
-                </span>
-              </div>
+          {
+            isOpenNotification && (
+              <div
+                className="
+                  absolute right-0 mt-3 w-[360px] bg-white dark:bg-[#0f1422] border border-gray-800 dark:border-gray-800
+                  rounded-xl shadow-2xl z-50 overflow-hidden
+                  animate-[fadeIn_.15s_ease]
+                "
+                style={{ animation: "slideDown .15s ease" }}
+              >
+                {/* Header */}
+                <div className="px-4 py-3 bg-gray-100 dark:bg-[#121829] border-b border-gray-800 dark:border-gray-800 flex items-center justify-between">
+                  <span className="font-bold text-gray-900 dark:text-white text-sm">Hòm thư</span>
+                  <span className="text-[11px] text-gray-400 dark:text-gray-400 bg-gray-800/80 dark:bg-gray-800/80 px-2 py-0.5 rounded-full">
+                    {totalAll === 0 ? "Không có gì mới" : `${totalAll} thông báo`}
+                  </span>
+                </div>
 
-              {/* Tabs */}
-              <div className="flex border-b border-gray-800 bg-[#0e1220]">
+                {/* Tabs */}
+                <div className="flex border-b border-gray-800 dark:border-gray-800 bg-white dark:bg-[#0e1220]">
                 {[
                   { key: "all",         label: "Tất cả",                 count: totalAll },
                   { key: "tasks",       label: "Công việc",              count: activeTasks },
@@ -373,7 +374,7 @@ export default function Header({ open }) {
               </div>
 
               {/* Body */}
-              <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-800/60 bg-[#0f1422]">
+              <div className="max-h-[360px] overflow-y-auto divide-y divide-gray-800/60 dark:divide-gray-800/60 bg-white dark:bg-[#0f1422]">
 
                 {/* ── LỊCH MỜI (pending) ── */}
                 {(activeTab === "all" || activeTab === "invitations") && invitations.map((inv) => (
@@ -493,7 +494,7 @@ export default function Header({ open }) {
         {/* Settings */}
         <button
           onClick={() => navigate("/settings")}
-          className="text-gray-300 hover:text-white text-xl"
+          className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-xl transition"
         >
           <FiSettings />
         </button>
@@ -508,16 +509,16 @@ export default function Header({ open }) {
           </button>
 
           {menu && (
-            <div className="absolute right-0 mt-2 w-36 bg-[#111] border border-gray-700 rounded-lg shadow-xl text-sm z-50 overflow-hidden">
+            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-[#111] border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl text-sm z-50 overflow-hidden">
               <button
                 onClick={() => { setMenu(false); navigate("/profile"); }}
-                className="w-full text-left px-4 py-2.5 hover:bg-gray-800 transition"
+                className="w-full text-left px-4 py-2.5 hover:bg-gray-100 dark:hover:bg-gray-800 transition text-gray-700 dark:text-gray-300"
               >
                 Hồ Sơ
               </button>
               <button
                 onClick={handleLogout}
-                className="w-full text-left px-4 py-2.5 hover:bg-red-600 transition text-gray-300 hover:text-white"
+                className="w-full text-left px-4 py-2.5 hover:bg-red-100 dark:hover:bg-red-600 transition text-gray-700 dark:text-gray-300 dark:hover:text-white"
               >
                 Đăng Xuất
               </button>
@@ -528,3 +529,4 @@ export default function Header({ open }) {
     </div>
   );
 }
+

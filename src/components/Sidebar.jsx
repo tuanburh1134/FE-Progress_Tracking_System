@@ -19,7 +19,7 @@ export default function Sidebar({ open, setOpen }) {
 
   return (
     <div
-      className={`fixed top-0 left-0 h-screen bg-[#0b0f1a] border-r border-gray-800 flex flex-col
+      className={`fixed top-0 left-0 h-screen bg-white dark:bg-[#0b0f1a] border-r border-gray-200 dark:border-gray-800 flex flex-col
       transition-all duration-300 ease-in-out
       ${open ? "w-64" : "w-16 items-center"}`}
     >
@@ -30,7 +30,7 @@ export default function Sidebar({ open, setOpen }) {
         {open && (
           <h1
             onClick={() => navigate("/dashboard")}
-            className="text-xl font-bold text-white cursor-pointer"
+            className="text-xl font-bold text-gray-900 dark:text-white cursor-pointer"
           >
             ProjectHub
           </h1>
@@ -38,7 +38,7 @@ export default function Sidebar({ open, setOpen }) {
 
         <button
           onClick={() => setOpen(!open)}
-          className="text-white text-xl"
+          className="text-gray-900 dark:text-white text-xl"
         >
           ☰
         </button>
@@ -46,7 +46,7 @@ export default function Sidebar({ open, setOpen }) {
 
       {/* MENU */}
       {open && (
-        <ul className="space-y-2 text-gray-300 flex-1 px-2 w-full">
+        <ul className="space-y-2 text-gray-600 dark:text-gray-300 flex-1 px-2 w-full">
           {menu.map((item) => {
             const isActive = location.pathname === item.path;
 
@@ -72,3 +72,4 @@ export default function Sidebar({ open, setOpen }) {
     </div>
   );
 }
+

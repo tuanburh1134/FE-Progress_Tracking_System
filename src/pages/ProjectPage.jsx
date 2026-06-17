@@ -252,20 +252,20 @@ function CreateProjectModal({ onClose, onCreate }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-[#0b0f1a] border border-gray-700 rounded-2xl w-full max-w-xl shadow-2xl animate-fadeIn max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-white/70 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-700 rounded-2xl w-full max-w-xl shadow-2xl animate-fadeIn max-h-[90vh] overflow-y-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-800 sticky top-0 bg-[#0b0f1a] z-10">
+        <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#0b0f1a] z-10">
           <div>
-            <h2 className="text-lg font-bold text-white">Tạo Dự Án Mới</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Tạo Dự Án Mới</h2>
+            <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
               Điền thông tin bên dưới để khởi tạo dự án
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-xl p-1 rounded hover:bg-gray-800 transition"
+            className="text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white text-xl p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-800 transition"
           >
             <FiX />
           </button>
@@ -290,37 +290,39 @@ function CreateProjectModal({ onClose, onCreate }) {
             <div className="space-y-3">
               {/* Tên dự án */}
               <div>
-                <label className="text-sm text-gray-300 block mb-1">
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
                   Tên Dự Án <span className="text-red-400">*</span>
                 </label>
                 <input
                   value={form.name}
                   onChange={(e) => set("name", e.target.value)}
                   placeholder="Nhập tên dự án..."
-                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
+                  className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-600"
                 />
               </div>
 
               {/* Mã dự án */}
               <div>
-                <label className="text-sm text-gray-300 block mb-1">
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
                   Mã Dự Án
                 </label>
                 <input
                   value={form.projectCode}
                   onChange={(e) => set("projectCode", e.target.value)}
                   placeholder="Nhập mã dự án (ví dụ: ABC-123)"
-                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
+                  className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-600"
                 />
               </div>
 
               {/* Mô hình SDLC */}
               <div>
-                <label className="text-sm text-gray-300 block mb-1">Mô Hình SDLC</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
+                  Mô hình SDLC
+                </label>
                 <select
                   value={form.sdlc}
                   onChange={(e) => set("sdlc", e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white"
+                  className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white"
                 >
                   {SDLC_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
@@ -330,7 +332,7 @@ function CreateProjectModal({ onClose, onCreate }) {
 
               {/* Mô tả */}
               <div>
-                <label className="text-sm text-gray-300 block mb-1">
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
                   Mô Tả
                   <span className="text-gray-500 text-xs ml-1">(tóm tắt mục tiêu, phạm vi)</span>
                 </label>
@@ -339,7 +341,7 @@ function CreateProjectModal({ onClose, onCreate }) {
                   onChange={(e) => set("description", e.target.value)}
                   placeholder="Mô tả ngắn về dự án..."
                   rows={3}
-                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600 resize-none"
+                  className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white resize-none placeholder:text-gray-500 dark:placeholder:text-gray-600"
                 />
               </div>
             </div>
@@ -347,27 +349,27 @@ function CreateProjectModal({ onClose, onCreate }) {
 
           {/* ── TIMELINE & ƯU TIÊN ── */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3">
               Timeline & Ưu Tiên
             </h3>
 
             <div className="grid grid-cols-2 gap-3">
               {/* Ngày bắt đầu */}
               <div>
-                <label className="text-sm text-gray-300 block mb-1">
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
                   Ngày Bắt Đầu <span className="text-red-400">*</span>
                 </label>
                 <input
                   type="date"
                   value={form.startDate}
                   onChange={(e) => set("startDate", e.target.value)}
-                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white cursor-pointer"
+                  className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white cursor-pointer"
                 />
               </div>
 
               {/* Ngày kết thúc */}
               <div>
-                <label className="text-sm text-gray-300 block mb-1">
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
                   Ngày Kết Thúc <span className="text-red-400">*</span>
                 </label>
                 <input
@@ -376,13 +378,13 @@ function CreateProjectModal({ onClose, onCreate }) {
                   min={form.startDate}
                   onChange={(e) => set("deadline", e.target.value)}
                   onClick={(e) => e.target.showPicker?.()}
-                  className="w-full p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white cursor-pointer"
+                  className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white cursor-pointer"
                 />
               </div>
 
               {/* Ưu tiên */}
               <div className="col-span-2">
-                <label className="text-sm text-gray-300 block mb-2">Độ Ưu Tiên</label>
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-2">Độ Ưu Tiên</label>
                 <div className="flex gap-2">
                   {PRIORITY_OPTIONS.map((p) => (
                     <button
@@ -391,8 +393,8 @@ function CreateProjectModal({ onClose, onCreate }) {
                       onClick={() => set("priority", p.value)}
                       className={`flex-1 py-2 rounded-lg border text-xs font-medium transition ${
                         form.priority === p.value
-                          ? "border-blue-500 bg-blue-600/20 text-white"
-                          : "border-gray-700 bg-black text-gray-400 hover:border-gray-500"
+                          ? "border-blue-500 bg-blue-600/20 text-gray-900 dark:text-white"
+                          : "border-gray-300 dark:border-gray-700 bg-gray-100 dark:bg-black text-gray-600 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500"
                       }`}
                     >
                       <span className={p.color}>{p.label}</span>
@@ -405,22 +407,22 @@ function CreateProjectModal({ onClose, onCreate }) {
 
           {/* ── MỜI THÀNH VIÊN ── */}
           <section>
-            <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
+            <h3 className="text-xs font-semibold text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
               <FiUserPlus className="text-blue-400" />
               Mời Thành Viên
-              <span className="text-gray-600 font-normal normal-case">(tuỳ chọn)</span>
+              <span className="text-gray-500 dark:text-gray-600 font-normal normal-case">(tuỳ chọn)</span>
             </h3>
 
             {/* Search input */}
             <div className="relative" ref={dropdownRef}>
               <div className="relative">
-                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm" />
+                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-gray-500 text-sm" />
                 <input
                   value={emailQuery}
                   onChange={(e) => setEmailQuery(e.target.value)}
                   onFocus={() => searchResults.length > 0 && setShowDropdown(true)}
                   placeholder="Nhập email để tìm kiếm thành viên..."
-                  className="w-full pl-9 pr-4 p-2.5 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none text-sm text-white placeholder-gray-600"
+                  className="w-full pl-9 pr-4 p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-600"
                 />
                 {searchLoading && (
                   <FiLoader className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-400 animate-spin" />
@@ -429,18 +431,18 @@ function CreateProjectModal({ onClose, onCreate }) {
 
               {/* Dropdown kết quả */}
               {showDropdown && (
-                <div className="absolute top-full left-0 right-0 mt-1 bg-[#0f1422] border border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-[#0f1422] border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl z-50 overflow-hidden">
                   {searchResults.map((u) => (
                     <div
                       key={u.id}
-                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-600/10 transition cursor-pointer border-b border-gray-800 last:border-0"
+                      className="flex items-center gap-3 px-4 py-3 hover:bg-blue-50 dark:hover:bg-blue-600/10 transition cursor-pointer border-b border-gray-200 dark:border-gray-800 last:border-0"
                     >
                       <Avatar name={u.fullName || u.username} />
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">
+                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {u.fullName || u.username}
                         </p>
-                        <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{u.email}</p>
                       </div>
                       <button
                         type="button"
@@ -459,25 +461,25 @@ function CreateProjectModal({ onClose, onCreate }) {
             {/* Danh sách đã mời */}
             {invitedMembers.length > 0 && (
               <div className="mt-3 space-y-2">
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-gray-600 dark:text-gray-500">
                   Đã chọn {invitedMembers.length} thành viên:
                 </p>
                 {invitedMembers.map((m) => (
                   <div
                     key={m.id}
-                    className="flex items-center gap-3 px-3 py-2 bg-blue-600/10 border border-blue-500/30 rounded-lg"
+                    className="flex items-center gap-3 px-3 py-2 bg-blue-50 dark:bg-blue-600/10 border border-blue-200 dark:border-blue-500/30 rounded-lg"
                   >
                     <Avatar name={m.fullName || m.username} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">
+                      <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                         {m.fullName || m.username}
                       </p>
-                      <p className="text-xs text-gray-400 truncate">{m.email}</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{m.email}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleRemoveInvited(m.id)}
-                      className="text-gray-500 hover:text-red-400 transition p-1 rounded"
+                      className="text-gray-500 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition p-1 rounded"
                     >
                       <FiX />
                     </button>
@@ -488,13 +490,13 @@ function CreateProjectModal({ onClose, onCreate }) {
           </section>
 
           {/* ── NGƯỜI TẠO ── */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-gray-900 rounded-lg border border-gray-800">
+          <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-900 rounded-lg border border-gray-300 dark:border-gray-800">
             <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-xs font-bold text-white">
               {user?.fullName?.charAt(0) || "U"}
             </div>
             <div>
-              <p className="text-xs text-gray-400">Trưởng nhóm (bạn)</p>
-              <p className="text-sm text-white font-medium">{user?.fullName || user?.username}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-400">Trưởng nhóm (bạn)</p>
+              <p className="text-sm text-gray-900 dark:text-white font-medium">{user?.fullName || user?.username}</p>
             </div>
           </div>
 
@@ -503,7 +505,7 @@ function CreateProjectModal({ onClose, onCreate }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-400 hover:text-white transition"
+              className="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition"
             >
               Hủy Bỏ
             </button>
@@ -580,14 +582,14 @@ export default function ProjectPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#070a12] text-white p-6">
+    <div className="min-h-screen bg-white dark:bg-[#070a12] text-gray-900 dark:text-white p-6">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Dự Án</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dự Án</h1>
           {!loading && (
-            <p className="text-gray-400 text-sm mt-0.5">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mt-0.5">
               {projects.length} dự án của bạn
             </p>
           )}
@@ -598,12 +600,12 @@ export default function ProjectPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm dự án..."
-            className="bg-[#0b0f1a] border border-gray-800 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 w-52"
+            className="bg-gray-100 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 w-52 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
           />
 
           <button
             onClick={() => setIsOpen(true)}
-            className="bg-blue-600 hover:bg-blue-500 transition px-4 py-2 rounded-lg text-sm font-semibold"
+            className="bg-blue-600 hover:bg-blue-500 transition px-4 py-2 rounded-lg text-sm font-semibold text-white"
           >
             + Thêm Dự Án
           </button>
@@ -645,9 +647,9 @@ export default function ProjectPage() {
 
           {/* EMPTY STATE */}
           {filtered.length === 0 && (
-            <div className="flex flex-col items-center justify-center mt-20 text-gray-500 gap-3">
+            <div className="flex flex-col items-center justify-center mt-20 text-gray-500 dark:text-gray-500 gap-3">
               {search ? (
-                <p>Không tìm thấy dự án nào khớp với "<span className="text-white">{search}</span>"</p>
+                <p>Không tìm thấy dự án nào khớp với "<span className="text-gray-900 dark:text-white">{search}</span>"</p>
               ) : (
                 <>
                   <p className="text-lg font-medium text-gray-400">Chưa có dự án nào</p>
@@ -675,3 +677,4 @@ export default function ProjectPage() {
     </div>
   );
 }
+
