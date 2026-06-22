@@ -12,7 +12,7 @@ export default function Sidebar({ open, setOpen }) {
   }, []);
 
   const menu = [
-    { name: "Bảng Điều Khiển", path: "/dashboard" },
+    { name: "Thống Kê", path: "/dashboard" },
     { name: "Dự Án", path: "/project" },
     { name: "Nhóm", path: "/team" },
   ];
