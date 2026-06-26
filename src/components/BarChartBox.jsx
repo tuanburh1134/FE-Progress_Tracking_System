@@ -21,7 +21,10 @@ const CustomTooltip = ({ active, payload, label }) => {
           </span>
         </p>
       </div>
-  );
+    );
+  }
+
+  return null;
 };
 
 // Custom shape cho từng cột – nổi lên và phát sáng khi hover
