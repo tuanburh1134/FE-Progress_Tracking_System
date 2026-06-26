@@ -1,44 +1,71 @@
 import { useEffect, useState } from "react";
 import useAuthStore from "../store/authStore";
+import { getDashboardStats } from "../features/dashboard/services/dashboardService";
 
 import StatCard from "../components/StatCard";
 import BarChartBox from "../components/BarChartBox";
 import PieChartBox from "../components/PieChartBox";
 import LineChartBox from "../components/LineChartBox";
 
-const barData = [
-  { name: "Mobile", value: 65 },
-  { name: "Backend", value: 45 },
-  { name: "Marketing", value: 20 },
-];
+// ---------------------------------------------------------------------------
+// Skeleton loader cho StatCard
+// ---------------------------------------------------------------------------
+const StatCardSkeleton = () => (
+  <div className="bg-[#0b0f1a] border border-gray-800 rounded-xl p-4 animate-pulse">
+    <div className="h-3 w-2/3 bg-gray-700 rounded mb-3" />
+    <div className="h-7 w-1/3 bg-gray-600 rounded" />
+  </div>
+);
 
-const pieData = [
-  { name: "Chờ xử lý", value: 2 },
-  { name: "Đang thực hiện", value: 2 },
-  { name: "Đang xem xét", value: 1 },
-  { name: "Hoàn thành", value: 2 },
-];
+// ---------------------------------------------------------------------------
+// Skeleton loader cho biểu đồ
+// ---------------------------------------------------------------------------
+const ChartSkeleton = ({ className = "" }) => (
+  <div
+    className={`bg-[#0b0f1a] border border-gray-800 rounded-xl p-4 animate-pulse ${className}`}
+  >
+    <div className="h-3 w-1/3 bg-gray-700 rounded mb-4" />
+    <div className="h-56 bg-gray-800 rounded-lg" />
+  </div>
+);
 
-const lineData = [
-  { name: "T2", value: 12 },
-  { name: "T3", value: 18 },
-  { name: "T4", value: 14 },
-  { name: "T5", value: 25 },
-  { name: "T6", value: 22 },
-  { name: "T7", value: 10 },
-  { name: "CN", value: 6 },
-];
-
+// ---------------------------------------------------------------------------
+// Component chính
+// ---------------------------------------------------------------------------
 export default function Dashboard() {
-  const [loading, setLoading] = useState(true);
   const user = useAuthStore((s) => s.user);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setLoading(false);
-    }, 500);
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-    return () => clearTimeout(timer);
+  useEffect(() => {
+    let cancelled = false;
+
+    const fetchStats = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const data = await getDashboardStats();
+        if (!cancelled) {
+          setStats(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          console.error("Lỗi khi tải dashboard stats:", err);
+          setError("Không thể tải dữ liệu. Vui lòng thử lại.");
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchStats();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   if (loading) {
@@ -68,22 +95,65 @@ export default function Dashboard() {
           </p>
         </div>
 
+        {/* Lỗi */}
+        {error && (
+          <div className="bg-red-900/30 border border-red-700 text-red-300 px-4 py-3 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-4 gap-4">
-          <StatCard title="Dự Án Đang Hoạt Động" value="2" />
-          <StatCard title="Công Việc Hoàn Thành" value="2" />
-          <StatCard title="Đang Thực Hiện" value="5" />
-          <StatCard title="Thành Viên Nhóm" value="4" />
+          {loading ? (
+            <>
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+              <StatCardSkeleton />
+            </>
+          ) : (
+            <>
+              <StatCard
+                title="Dự Án Đang Hoạt Động"
+                value={String(stats?.activeProjects ?? 0)}
+              />
+              <StatCard
+                title="Công Việc Hoàn Thành"
+                value={String(stats?.completedTasks ?? 0)}
+              />
+              <StatCard
+                title="Đang Thực Hiện"
+                value={String(stats?.inProgressTasks ?? 0)}
+              />
+              <StatCard
+                title="Thành Viên Nhóm"
+                value={String(stats?.teamMembers ?? 0)}
+              />
+            </>
+          )}
         </div>
 
         {/* Charts */}
         <div className="grid grid-cols-3 gap-4">
-          <BarChartBox data={barData} />
-          <PieChartBox data={pieData} />
+          {loading ? (
+            <>
+              <ChartSkeleton className="col-span-2" />
+              <ChartSkeleton />
+            </>
+          ) : (
+            <>
+              <BarChartBox data={stats?.projectProgress ?? []} />
+              <PieChartBox data={stats?.taskStatusBreakdown ?? []} />
+            </>
+          )}
         </div>
 
         {/* Line */}
-        <LineChartBox data={lineData} />
+        {loading ? (
+          <ChartSkeleton />
+        ) : (
+          <LineChartBox data={stats?.weeklyActivity ?? []} />
+        )}
 
       </div>
     </div>
