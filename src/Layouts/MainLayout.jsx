@@ -7,7 +7,7 @@ export default function MainLayout() {
   const [open, setOpen] = useState(true);
 
   return (
-    <div className="flex min-h-screen bg-[#070a12] text-white">
+    <div className="flex min-h-screen bg-white dark:bg-[#070a12] text-gray-900 dark:text-white">
 
       {/* SIDEBAR */}
       <Sidebar open={open} setOpen={setOpen} />
@@ -30,3 +30,4 @@ export default function MainLayout() {
     </div>
   );
 }
+

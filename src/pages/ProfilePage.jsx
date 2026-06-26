@@ -67,3 +67,4 @@ export default function ProjectPage({ projectList, setProjectList }) {
     </div>
   );
 }
+

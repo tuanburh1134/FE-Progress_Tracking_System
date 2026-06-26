@@ -126,8 +126,8 @@ export default function PieChartBox({ data }) {
   const isEmpty = !data || data.length === 0;
 
   return (
-    <div className="bg-[#0b0f1a] p-4 rounded-xl border border-gray-800 shadow-lg">
-      <h2 className="text-white font-semibold mb-4">Trạng Thái Công Việc</h2>
+    <div className="bg-white dark:bg-[#0b0f1a] p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg">
+      <h2 className="text-gray-900 dark:text-white font-semibold mb-4">Trạng Thái Công Việc</h2>
 
       {/* Tooltip theo chuột */}
       <FloatingTooltip
@@ -140,7 +140,7 @@ export default function PieChartBox({ data }) {
       />
 
       {isEmpty ? (
-        <div className="flex items-center justify-center h-56 text-gray-600 text-sm">
+        <div className="flex items-center justify-center h-56 text-gray-600 dark:text-gray-400 text-sm">
           Chưa có dữ liệu
         </div>
       ) : (
@@ -194,7 +194,9 @@ export default function PieChartBox({ data }) {
                     className="inline-block w-2.5 h-2.5 rounded-full flex-shrink-0"
                     style={{ background: COLORS[index % COLORS.length] }}
                   />
-                  <span className="text-gray-300">{entry.name}</span>
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {entry.name}
+                  </span>
                 </div>
                 <span
                   className="font-bold"
@@ -210,3 +212,4 @@ export default function PieChartBox({ data }) {
     </div>
   );
 }
+

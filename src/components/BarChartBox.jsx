@@ -9,38 +9,15 @@ import {
   Cell,
 } from "recharts";
 
-// Tooltip nổi theo con trỏ chuột
-const FloatingTooltip = ({ visible, x, y, label, value }) => {
-  if (!visible) return null;
-  return (
-    <div
-      style={{
-        position: "fixed",
-        left: x + 14,
-        top: y - 10,
-        pointerEvents: "none",
-        zIndex: 9999,
-        transform: "translateY(-100%)",
-      }}
-    >
-      <div
-        style={{
-          background: "linear-gradient(135deg, rgba(15,23,42,0.97) 0%, rgba(30,41,59,0.97) 100%)",
-          backdropFilter: "blur(12px)",
-          border: "1px solid rgba(99,102,241,0.4)",
-          borderRadius: "10px",
-          padding: "10px 16px",
-          boxShadow: "0 8px 32px rgba(59,130,246,0.25), 0 2px 8px rgba(0,0,0,0.5)",
-          minWidth: "120px",
-        }}
-      >
-        <p style={{ color: "#e2e8f0", fontSize: "13px", fontWeight: 700, marginBottom: "4px" }}>
-          {label}
-        </p>
-        <p style={{ color: "#94a3b8", fontSize: "12px", margin: 0 }}>
-          Tiến độ:{" "}
-          <span style={{ color: "#60a5fa", fontWeight: 800, fontSize: "15px" }}>
-            {value}%
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-gray-100/80 dark:bg-black/80 backdrop-blur-md text-gray-900 dark:text-white px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 shadow-lg">
+        <p className="text-sm font-semibold">{label}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300">
+          Giá trị:{" "}
+          <span className="text-blue-400 font-bold">
+            {payload[0].value}
           </span>
         </p>
       </div>
@@ -103,16 +80,10 @@ export default function BarChartBox({ data }) {
   }, []);
 
   return (
-    <div className="col-span-2 bg-[#0b0f1a] p-4 rounded-xl border border-gray-800 shadow-lg">
-      <h3 className="mb-4 font-semibold text-white">Tiến Độ Dự Án</h3>
-
-      <FloatingTooltip
-        visible={tooltip.visible}
-        x={tooltip.x}
-        y={tooltip.y}
-        label={tooltip.label}
-        value={tooltip.value}
-      />
+    <div className="col-span-2 bg-white dark:bg-[#0b0f1a] p-4 rounded-xl border border-gray-200 dark:border-gray-800 shadow-lg">
+      <h3 className="mb-4 font-semibold text-gray-900 dark:text-white">
+        Tiến Độ Dự Án
+      </h3>
 
       <ResponsiveContainer width="100%" height={260}>
         <BarChart
@@ -151,3 +122,4 @@ export default function BarChartBox({ data }) {
     </div>
   );
 }
+

@@ -64,7 +64,7 @@ export default function TeamPage() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6">
+    <div className="min-h-screen bg-white dark:bg-black text-gray-900 dark:text-white p-6">
 
       {/* HEADER */}
       <div className="flex justify-between items-center mb-8">
@@ -81,7 +81,7 @@ export default function TeamPage() {
             setEditId(null);
             setOpenForm(true);
           }}
-          className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500"
+          className="bg-blue-600 px-4 py-2 rounded-lg hover:bg-blue-500 text-white"
         >
           + Thêm Thành Viên
         </button>
@@ -93,7 +93,7 @@ export default function TeamPage() {
         {team.map((m) => (
           <div
             key={m.id}
-            className="relative bg-[#0b0f1a] border border-gray-800 rounded-xl p-5 hover:border-blue-500 transition"
+            className="relative bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:border-blue-500 transition"
           >
 
             {/* ACTIVE */}
@@ -104,12 +104,12 @@ export default function TeamPage() {
 
             {/* AVATAR */}
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gray-800 flex items-center justify-center font-bold">
+              <div className="w-10 h-10 rounded-full bg-gray-300 dark:bg-gray-800 flex items-center justify-center font-bold text-gray-900 dark:text-white">
                 {m.name.charAt(0)}
               </div>
 
               <div>
-                <h2 className="font-semibold">{m.name}</h2>
+                <h2 className="font-semibold text-gray-900 dark:text-white">{m.name}</h2>
 
                 <span
                   className={`text-xs px-2 py-1 rounded text-white ${
@@ -122,11 +122,11 @@ export default function TeamPage() {
             </div>
 
             {/* EMAIL */}
-            <div className="text-gray-400 text-sm mb-4">
+            <div className="text-gray-600 dark:text-gray-400 text-sm mb-4">
               {m.email}
             </div>
 
-            <hr className="border-gray-800 mb-4" />
+            <hr className="border-gray-300 dark:border-gray-800 mb-4" />
 
             {/* ACTIONS */}
             <div className="flex gap-3">
@@ -154,11 +154,11 @@ export default function TeamPage() {
 
       {/* ================= MODAL ADD / EDIT ================= */}
       {openForm && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
+        <div className="fixed inset-0 bg-white/70 dark:bg-black/70 flex items-center justify-center">
 
-          <div className="bg-[#0b0f1a] p-6 rounded-xl w-[420px] border border-gray-700">
+          <div className="bg-white dark:bg-[#0b0f1a] p-6 rounded-xl w-[420px] border border-gray-200 dark:border-gray-700">
 
-            <h2 className="text-lg font-bold mb-4">
+            <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-white">
               {editId ? "Chỉnh sửa thành viên" : "Thêm thành viên"}
             </h2>
 
@@ -168,7 +168,7 @@ export default function TeamPage() {
                 setForm({ ...form, name: e.target.value })
               }
               placeholder="Họ và tên"
-              className="w-full p-3 mb-3 rounded bg-black border border-gray-700"
+              className="w-full p-3 mb-3 rounded bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
 
             <input
@@ -177,7 +177,7 @@ export default function TeamPage() {
                 setForm({ ...form, email: e.target.value })
               }
               placeholder="Email"
-              className="w-full p-3 mb-3 rounded bg-black border border-gray-700"
+              className="w-full p-3 mb-3 rounded bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
 
             <select
@@ -185,7 +185,7 @@ export default function TeamPage() {
               onChange={(e) =>
                 setForm({ ...form, role: e.target.value })
               }
-              className="w-full p-3 mb-4 rounded bg-black border border-gray-700"
+              className="w-full p-3 mb-4 rounded bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 text-gray-900 dark:text-white"
             >
               <option value="Leader">Leader</option>
               <option value="PO">PO</option>
@@ -195,7 +195,7 @@ export default function TeamPage() {
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setOpenForm(false)}
-                className="text-gray-400"
+                className="text-gray-600 dark:text-gray-400"
               >
                 Hủy
               </button>
@@ -215,7 +215,7 @@ export default function TeamPage() {
 
       {/* ================= DELETE CONFIRM ================= */}
       {openDelete && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center">
+        <div className="fixed inset-0 bg-white dark:bg-black/70 flex items-center justify-center">
 
           <div className="bg-[#0b0f1a] p-6 rounded-xl w-[380px] border border-gray-700">
 
@@ -253,3 +253,6 @@ export default function TeamPage() {
     </div>
   );
 }
+
+
+

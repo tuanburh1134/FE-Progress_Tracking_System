@@ -20,8 +20,19 @@ import "./index.css";
   } catch { /* ignore */ }
 })();
 
+// ── Load theme từ localStorage khi app start ──────────────────────────────
+(function loadTheme() {
+  const theme = localStorage.getItem("theme") || "dark";
+  if (theme === "dark") {
+    document.documentElement.classList.add("dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+  }
+})();
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   <BrowserRouter>
     <App />
   </BrowserRouter>
 );
+

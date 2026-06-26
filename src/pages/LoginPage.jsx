@@ -48,18 +48,18 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black text-white">
+    <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black text-gray-900 dark:text-white">
 
       {/* Card */}
-      <div className="w-full max-w-md p-8 rounded-2xl bg-[#0b0f1a] border border-gray-800 shadow-2xl animate-cardIn">
+      <div className="w-full max-w-md p-8 rounded-2xl bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-800 shadow-2xl animate-cardIn">
 
         {/* Logo */}
         <div className="flex flex-col items-center mb-6">
           <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center font-bold text-lg">
             PH
           </div>
-          <h1 className="text-2xl font-bold mt-3">ProjectHub</h1>
-          <p className="text-gray-400 text-sm">Đăng nhập vào tài khoản của bạn</p>
+          <h1 className="text-2xl font-bold mt-3 text-gray-900 dark:text-white">ProjectHub</h1>
+          <p className="text-gray-600 dark:text-gray-400 text-sm">Đăng nhập vào tài khoản của bạn</p>
         </div>
 
         {/* Thông báo lỗi */}
@@ -73,26 +73,26 @@ export default function LoginPage() {
 
           {/* Email */}
           <div>
-            <label className="text-sm text-gray-300">Địa chỉ Email</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Địa chỉ Email</label>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="example@email.com"
-              className="w-full mt-1 p-3 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none"
+              className="w-full mt-1 p-3 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
           </div>
 
           {/* Mật khẩu */}
           <div>
-            <label className="text-sm text-gray-300">Mật khẩu</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Mật khẩu</label>
             <div className="relative">
               <input
                 type={show ? "text" : "password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full mt-1 p-3 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none pr-10"
+                className="w-full mt-1 p-3 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none pr-10 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
               />
               <button
                 type="button"
@@ -124,16 +124,16 @@ export default function LoginPage() {
           </button>
 
           {/* Divider */}
-          <div className="flex items-center gap-2 text-gray-500 text-sm">
-            <div className="flex-1 h-px bg-gray-800"></div>
+          <div className="flex items-center gap-2 text-gray-600 dark:text-gray-500 text-sm">
+            <div className="flex-1 h-px bg-gray-300 dark:bg-gray-800"></div>
             Hoặc
-            <div className="flex-1 h-px bg-gray-800"></div>
+            <div className="flex-1 h-px bg-gray-300 dark:bg-gray-800"></div>
           </div>
 
           {/* Đăng ký */}
-          <p className="text-center text-sm text-gray-400">
+          <p className="text-center text-sm text-gray-600 dark:text-gray-400">
             Chưa có tài khoản?{" "}
-            <Link to="/register" className="text-blue-500 hover:text-blue-400">
+            <Link to="/register" className="text-blue-500 hover:text-blue-600 dark:hover:text-blue-400">
               Đăng ký ngay
             </Link>
           </p>
@@ -143,3 +143,4 @@ export default function LoginPage() {
     </div>
   );
 }
+
