@@ -21,7 +21,6 @@ const CustomTooltip = ({ active, payload, label }) => {
           </span>
         </p>
       </div>
-    </div>
   );
 };
 
