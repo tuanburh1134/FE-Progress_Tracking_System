@@ -85,13 +85,17 @@ export default function RegisterPage() {
 
           {/* Họ và tên */}
           <div>
-            <label className="text-sm text-gray-300">Họ và tên</label>
+            <label className="text-sm text-gray-700 dark:text-gray-300">Họ và tên</label>
             <input
               type="text"
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Nguyễn Văn A"
-              className="w-full mt-1 p-3 rounded-lg bg-black border border-gray-700 focus:border-blue-500 outline-none"
+              className="w-full mt-1 p-3 rounded-lg border outline-none transition-all duration-200 
+                        bg-gray-50 border-gray-300 text-gray-900 placeholder-gray-400 
+                        focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500
+                        dark:bg-black dark:border-gray-700 dark:text-white dark:placeholder-gray-500 
+                        dark:focus:border-blue-500"
             />
           </div>
 

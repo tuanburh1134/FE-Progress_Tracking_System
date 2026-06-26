@@ -1,4 +1,5 @@
 import { useNavigate } from "react-router-dom";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
 
 const STATUS_COLORS = {
   PLANNING:    "text-yellow-400 bg-yellow-400/10",
@@ -15,7 +16,7 @@ const PRIORITY_COLORS = {
   CRITICAL: "text-red-400",
 };
 
-export default function ProjectCard({ project }) {
+export default function ProjectCard({project, onEdit, onDelete,}) {
   const navigate = useNavigate();
 
   const statusColor = STATUS_COLORS[project.status] || "text-gray-400 bg-gray-400/10";
@@ -28,14 +29,43 @@ export default function ProjectCard({ project }) {
     >
       {/* Header */}
       <div className="flex justify-between items-start mb-2">
-        <h2 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-500 dark:group-hover:text-blue-400 transition line-clamp-1">
-          {project.name}
-        </h2>
-        {project.projectCode && (
-          <span className="text-xs text-gray-600 dark:text-gray-500 bg-gray-200 dark:bg-gray-800 px-2 py-0.5 rounded ml-2 flex-shrink-0">
-            {project.projectCode}
-          </span>
-        )}
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-blue-500 dark:group-hover:text-blue-400 transition line-clamp-1">
+              {project.name}
+          </h2>
+
+          <div className="flex items-center gap-2">
+
+              {project.projectCode && (
+                  <span className="text-xs text-gray-600 dark:text-gray-500 bg-gray-200 dark:bg-gray-800 px-2 py-0.5 rounded">
+                      {project.projectCode}
+                  </span>
+              )}
+
+              {/* Sửa */}
+              <button
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit?.();
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-blue-500 hover:text-white transition"
+                  title="Sửa"
+              >
+                  <FiEdit2 size={16} />
+              </button>
+
+              {/* Xóa */}
+              <button
+                  onClick={(e) => {
+                      e.stopPropagation();
+                      onDelete?.();
+                  }}
+                  className="p-1.5 rounded-lg hover:bg-red-500 hover:text-white transition"
+                  title="Xóa"
+              >
+                  <FiTrash2 size={16} />
+              </button>
+
+          </div>
       </div>
 
       {/* Status badge */}

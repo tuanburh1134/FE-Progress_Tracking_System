@@ -42,18 +42,20 @@ function Avatar({ name, size = "sm" }) {
 /* ─────────────────────────────────────────────
    MODAL TẠO DỰ ÁN
 ──────────────────────────────────────────────── */
-function CreateProjectModal({ onClose, onCreate }) {
+function CreateProjectModal({onClose,onCreate,onUpdate,project,}) {
   const user = useAuthStore((s) => s.user);
 
-  const [form, setForm] = useState({
-    name:        "",
-    projectCode: "",
-    description: "",
-    sdlc:        "AGILE",
-    priority:    "MEDIUM",
-    startDate:   new Date().toISOString().split("T")[0],
-    deadline:    "",
-  });
+const [form, setForm] = useState({
+  name: project?.name || "",
+  projectCode: project?.projectCode || "",
+  description: project?.description || "",
+  sdlc: project?.sdlc || "AGILE",
+  priority: project?.priority || "MEDIUM",
+  startDate:
+    project?.startDate ||
+    new Date().toISOString().split("T")[0],
+  deadline: project?.deadline || "",
+});
 
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
@@ -175,21 +177,56 @@ function CreateProjectModal({ onClose, onCreate }) {
         projectCode: trimmedProjectCode || null,
         description: trimmedDescription || null,
         priority:    form.priority,
+        sdlc: form.sdlc,
         startDate:   form.startDate,
         deadline:    form.deadline,
       };
 
+      // console.log("Payload:", payload);
+      // const res = await apiClient.post(ENDPOINTS.PROJECTS.CREATE, payload);
+      // console.log("API response:", res);
+      // const created = res.data?.data;
+
       console.log("Payload:", payload);
-      const res = await apiClient.post(ENDPOINTS.PROJECTS.CREATE, payload);
-      console.log("API response:", res);
-      const created = res.data?.data;
-      const backendError = res.data?.success === false ? res.data?.message : null;
-      if (backendError) {
-        throw new Error(backendError);
+
+      let res;
+      let savedProject;
+
+      if (project) {
+          // Cập nhật
+          res = await apiClient.put(
+              ENDPOINTS.PROJECTS.UPDATE(project.id),
+              payload
+          );
+
+          savedProject = res.data?.data;
+
+      } else {
+          // Tạo mới
+          res = await apiClient.post(
+              ENDPOINTS.PROJECTS.CREATE,
+              payload
+          );
+
+          savedProject = res.data?.data;
       }
 
+      console.log("API response:", res);
+
+      const backendError =
+          res.data?.success === false ? res.data?.message : null;
+
+      if (backendError) {
+          throw new Error(backendError);
+      }
+      
+      // const backendError = res.data?.success === false ? res.data?.message : null;
+      // if (backendError) {
+      //   throw new Error(backendError);
+      // }
+      
       /* Mời từng thành viên sau khi tạo project thành công */
-      if (invitedMembers.length > 0 && created?.id) {
+      if (!project && invitedMembers.length > 0 && savedProject?.id) {
         await Promise.allSettled(
           invitedMembers.map((m) =>
             memberService.addMember(created.id, m.email)
@@ -230,8 +267,13 @@ function CreateProjectModal({ onClose, onCreate }) {
         window.dispatchEvent(new CustomEvent("storage-update"));
       }
 
-      onCreate(created);
-      onClose();
+    if (project) {
+        onUpdate(savedProject);
+    } else {
+        onCreate(savedProject);
+    }
+
+    onClose();
     } catch (err) {
       console.error("Error creating project:", err);
       console.error("Error details:", err.response?.data);
@@ -258,9 +300,13 @@ function CreateProjectModal({ onClose, onCreate }) {
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-200 dark:border-gray-800 sticky top-0 bg-white dark:bg-[#0b0f1a] z-10">
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-white">Tạo Dự Án Mới</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white">
+                {project ? "Sửa Dự Án" : "Tạo Dự Án Mới"}
+            </h2>
             <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5">
-              Điền thông tin bên dưới để khởi tạo dự án
+              {project
+    ? "Chỉnh sửa thông tin dự án"
+    : "Điền thông tin bên dưới để khởi tạo dự án"}
             </p>
           </div>
           <button
@@ -518,11 +564,11 @@ function CreateProjectModal({ onClose, onCreate }) {
               {loading ? (
                 <>
                   <FiLoader className="animate-spin" />
-                  Đang tạo...
+                  {project ? "Đang cập nhật..." : "Đang tạo..."}
                 </>
               ) : (
                 <>
-                  Tạo Dự Án
+                  {project ? "Cập nhật Dự Án" : "Tạo Dự Án"}
                   {invitedMembers.length > 0 && (
                     <span className="bg-white/20 text-xs px-1.5 py-0.5 rounded-full">
                       +{invitedMembers.length}
@@ -548,6 +594,34 @@ export default function ProjectPage() {
   const [loading,   setLoading]   = useState(true);
   const [error,     setError]     = useState("");
   const [isOpen,    setIsOpen]    = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  const [deleteProject, setDeleteProject] = useState(null);
+
+  /* Xoá dự án */
+  const handleDelete = async () => {
+
+    if (!deleteProject) return;
+
+    try {
+
+        await apiClient.delete(
+            ENDPOINTS.PROJECTS.DELETE(deleteProject.id)
+        );
+
+        setProjects(prev =>
+            prev.filter(p => p.id !== deleteProject.id)
+        );
+
+        setDeleteProject(null);
+
+      } catch (err) {
+
+          console.error(err);
+
+          alert("Xóa dự án thất bại.");
+
+      }
+  };
 
   /* Fetch danh sách dự án từ API */
   const fetchProjects = useCallback(async () => {
@@ -575,6 +649,16 @@ export default function ProjectPage() {
   const handleCreated = (newProject) => {
     setProjects((prev) => [newProject, ...prev]);
   };
+  /* Callback khi cập nhật thành công */
+  const handleUpdated = (updatedProject) => {
+        setProjects((prev) =>
+            prev.map((p) =>
+                p.id === updatedProject.id
+                    ? updatedProject
+                    : p
+            )
+        );
+    };
 
   /* Lọc theo tìm kiếm */
   const filtered = projects.filter((p) =>
@@ -641,7 +725,15 @@ export default function ProjectPage() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {filtered.map((project) => (
-              <ProjectCard key={project.id} project={project} />
+              <ProjectCard
+                  key={project.id}
+                  project={project}
+                  onEdit={() => {
+                      setEditingProject(project);
+                      setIsOpen(true);
+                  }}
+                  onDelete={() => setDeleteProject(project)}
+              />
             ))}
           </div>
 
@@ -655,7 +747,10 @@ export default function ProjectPage() {
                   <p className="text-lg font-medium text-gray-400">Chưa có dự án nào</p>
                   <p className="text-sm">Bấm "+ Thêm Dự Án" để tạo dự án đầu tiên của bạn</p>
                   <button
-                    onClick={() => setIsOpen(true)}
+                    onClick={() => {
+                        setEditingProject(null);
+                        setIsOpen(true);
+                    }}
                     className="mt-2 bg-blue-600 hover:bg-blue-500 transition px-5 py-2 rounded-lg text-sm text-white"
                   >
                     Tạo dự án ngay
@@ -669,11 +764,98 @@ export default function ProjectPage() {
 
       {/* MODAL */}
       {isOpen && (
-        <CreateProjectModal
-          onClose={() => setIsOpen(false)}
-          onCreate={handleCreated}
-        />
+          <CreateProjectModal
+              project={editingProject}
+              onClose={() => {
+                  setIsOpen(false);
+                  setEditingProject(null);
+              }}
+              onCreate={handleCreated}
+              onUpdate={handleUpdated}
+          />
       )}
+      {/* MODAL XÓA DỰ ÁN */}
+        {deleteProject && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+
+                <div className="w-full max-w-md rounded-2xl bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-700 shadow-2xl">
+
+                    <div className="p-6">
+
+                        <div className="flex justify-center mb-4">
+
+                            <div className="w-16 h-16 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center">
+
+                                <svg
+                                    className="w-8 h-8 text-red-500"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        d="M12 9v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"
+                                    />
+                                </svg>
+
+                            </div>
+
+                        </div>
+
+                        <h2 className="text-xl font-bold text-center text-gray-900 dark:text-white">
+
+                            Xóa dự án
+
+                        </h2>
+
+                        <p className="mt-3 text-center text-gray-600 dark:text-gray-400">
+
+                            Bạn có chắc muốn xóa
+
+                            <br />
+
+                            <span className="font-semibold text-red-500">
+
+                                "{deleteProject.name}"
+
+                            </span>
+
+                            ?
+
+                        </p>
+
+                        <p className="text-center text-sm mt-2 text-gray-500">
+
+                            Hành động này không thể hoàn tác.
+
+                        </p>
+
+                        <div className="flex gap-3 mt-8">
+
+                            <button
+                                onClick={() => setDeleteProject(null)}
+                                className="flex-1 py-2.5 rounded-xl border border-gray-300 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 transition"
+                            >
+                                Hủy
+                            </button>
+
+                            <button
+                                onClick={handleDelete}
+                                className="flex-1 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white font-semibold transition"
+                            >
+                                Xóa dự án
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+        )}      
     </div>
   );
 }

@@ -71,24 +71,24 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
   if (!open) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[200] w-80 flex flex-col bg-[#0b0f1a] border border-blue-700/50 rounded-2xl shadow-2xl shadow-blue-900/30 animate-fadeIn">
+    <div className="fixed bottom-6 right-6 z-[200] w-80 flex flex-col bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-blue-700/50 rounded-2xl shadow-2xl shadow-blue-900/20 dark:shadow-blue-900/30 animate-fadeIn">
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-800 bg-gradient-to-r from-blue-900/40 to-indigo-900/20 rounded-t-2xl">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/40 dark:to-indigo-900/20 rounded-t-2xl">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-          <span className="text-sm font-bold text-white">Trợ lý AI</span>
+          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+          <span className="text-sm font-bold text-gray-900 dark:text-white">Trợ lý AI</span>
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-white text-sm">✕</button>
+        <button onClick={onClose} className="text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white text-sm transition">✕</button>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2 max-h-64 min-h-[160px]">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-3 max-h-64 min-h-[160px] scrollbar-thin">
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.from === "user" ? "justify-end" : "justify-start"}`}>
             <div className={`px-3 py-2 rounded-xl text-xs max-w-[85%] leading-relaxed ${
               m.from === "user"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-800 text-gray-200"
+                ? "bg-blue-600 text-white shadow-sm"
+                : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
             }`}>
               {m.text}
             </div>
@@ -96,7 +96,7 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
         ))}
         {typing && (
           <div className="flex justify-start">
-            <div className="bg-gray-800 text-gray-400 px-3 py-2 rounded-xl text-xs flex gap-1">
+            <div className="bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-3 py-2 rounded-xl text-xs flex gap-1">
               <span className="animate-bounce" style={{ animationDelay: "0ms" }}>●</span>
               <span className="animate-bounce" style={{ animationDelay: "150ms" }}>●</span>
               <span className="animate-bounce" style={{ animationDelay: "300ms" }}>●</span>
@@ -107,17 +107,17 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
       </div>
 
       {/* Input */}
-      <div className="flex gap-2 px-3 pb-3">
+      <div className="flex gap-2 px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-800 bg-white dark:bg-[#0b0f1a] rounded-b-2xl">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && send()}
           placeholder="Nhập câu hỏi..."
-          className="flex-1 bg-black border border-gray-700 rounded-xl px-3 py-2 text-xs text-white outline-none focus:border-blue-500"
+          className="flex-1 bg-gray-50 border border-gray-200 dark:bg-black dark:border-gray-700 rounded-xl px-3 py-2 text-xs text-gray-900 dark:text-white outline-none focus:border-blue-500 transition"
         />
         <button
           onClick={send}
-          className="bg-blue-600 hover:bg-blue-500 text-white text-xs px-3 py-2 rounded-xl transition"
+          className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-2 rounded-xl transition shadow-sm"
         >
           Gửi
         </button>
@@ -319,7 +319,7 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
       onMouseLeave={() => setHover(false)}
       className="w-[280px] flex-shrink-0"
     >
-      <div className="p-3 bg-[#0b0f1a] border border-gray-800 rounded-2xl min-h-[420px] flex flex-col">
+      <div className="p-3 bg-gray-50 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 rounded-2xl min-h-[420px] flex flex-col">
         {/* Header */}
         <div className="mb-3 flex justify-between items-center">
           {edit ? (
@@ -327,7 +327,7 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
               value={title} autoFocus
               onChange={(e) => setTitle(e.target.value)}
               onBlur={() => { setEdit(false); onRenameColumn(column.id, title); }}
-              className="bg-black border border-gray-600 px-2 py-1 rounded-lg w-full text-sm outline-none"
+              className="bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-700 px-2 py-1 rounded-lg w-full text-sm outline-none"
             />
           ) : (
             <h2 onDoubleClick={() => setEdit(true)} className="font-bold text-sm cursor-pointer">{column.name}</h2>
@@ -634,7 +634,7 @@ public void process(String input) {
     /* text thường */
     return (
       <div key={i} className="flex justify-start">
-        <div className="bg-[#111827] border border-gray-800 text-gray-200 px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm max-w-[80%] leading-relaxed whitespace-pre-line">
+        <div className="px-4 py-2.5 rounded-2xl rounded-tl-sm text-sm max-w-[80%] leading-relaxed whitespace-pre-line border bg-gray-100 border-gray-200 text-gray-800 dark:bg-[#111827] dark:border-gray-800 dark:text-gray-200">
           {m.text.replace(/\*\*(.*?)\*\*/g, "$1")}
         </div>
       </div>
@@ -648,14 +648,14 @@ public void process(String input) {
     <div className="h-full flex gap-5" style={{ minHeight: "calc(100vh - 160px)" }}>
 
       {/* CHAT PANEL */}
-      <div className="flex-1 flex flex-col bg-[#0b0f1a] border border-gray-800 rounded-2xl overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden dark:bg-[#0b0f1a] dark:border-gray-800">
 
         {/* Chat header */}
-        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-800 bg-gradient-to-r from-blue-900/30 to-indigo-900/10">
-          <div className="w-2.5 h-2.5 rounded-full bg-green-400 animate-pulse" />
+        <div className="flex items-center gap-3 px-5 py-3.5 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50/40 dark:border-gray-800 dark:from-blue-900/30 dark:to-indigo-900/10">
+          <div className="w-2.5 h-2.5 rounded-full bg-green-500 dark:bg-green-400 animate-pulse" />
           <div>
-            <p className="text-sm font-bold text-white">Trợ lý AI — Project Assistant</p>
-            <p className="text-[10px] text-gray-500">Sẵn sàng hỗ trợ • Phân tích code • Điều phối công việc</p>
+            <p className="text-sm font-bold text-gray-900 dark:text-white">Trợ lý AI — Project Assistant</p>
+            <p className="text-[10px] text-gray-600 dark:text-gray-500">Sẵn sàng hỗ trợ • Phân tích code • Điều phối công việc</p>
           </div>
         </div>
 
@@ -664,9 +664,9 @@ public void process(String input) {
           {messages.map(renderMsg)}
           {typing && (
             <div className="flex justify-start">
-              <div className="bg-[#111827] border border-gray-800 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1.5">
+              <div className="bg-gray-100 border border-gray-200 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1.5 dark:bg-[#111827] dark:border-gray-800">
                 {[0, 150, 300].map((d, i) => (
-                  <span key={i} className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-bounce" style={{ animationDelay: `${d}ms` }} />
+                  <span key={i} className="w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-blue-400 animate-bounce" style={{ animationDelay: `${d}ms` }} />
                 ))}
               </div>
             </div>
@@ -675,18 +675,18 @@ public void process(String input) {
         </div>
 
         {/* INPUT */}
-        <div className="px-4 pb-4 pt-2 border-t border-gray-800">
+        <div className="px-4 pb-4 pt-2 border-t border-gray-200 dark:border-gray-800">
           {/* Quick actions */}
           <div className="flex gap-2 mb-3 flex-wrap">
             <button
               onClick={handleCannotFinish}
-              className="text-xs px-3 py-1.5 bg-red-900/30 border border-red-700/50 text-red-300 rounded-xl hover:bg-red-900/50 transition"
+              className="text-xs px-3 py-1.5 bg-red-50 border border-red-200 text-red-600 rounded-xl hover:bg-red-100 transition dark:bg-red-900/30 dark:border-red-700/50 dark:text-red-300 dark:hover:bg-red-900/50"
             >
               Tôi không thể hoàn thành task đúng hạn
             </button>
             <button
               onClick={handleAnalyzeBug}
-              className="text-xs px-3 py-1.5 bg-yellow-900/30 border border-yellow-700/50 text-yellow-300 rounded-xl hover:bg-yellow-900/50 transition"
+              className="text-xs px-3 py-1.5 bg-amber-50 border border-amber-200 text-amber-700 rounded-xl hover:bg-amber-100 transition dark:bg-yellow-900/30 dark:border-yellow-700/50 dark:text-yellow-300 dark:hover:bg-yellow-900/50"
             >
               Phân tích lỗi code
             </button>
@@ -696,7 +696,7 @@ public void process(String input) {
           <select
             value={selectedTask}
             onChange={(e) => setSelectedTask(e.target.value)}
-            className="w-full mb-3 p-2.5 bg-black border border-gray-700 rounded-xl text-sm text-gray-300 outline-none focus:border-blue-500"
+            className="w-full mb-3 p-2.5 bg-gray-50 border border-gray-300 rounded-xl text-sm text-gray-800 outline-none focus:border-blue-500 dark:bg-black dark:border-gray-700 dark:text-gray-300"
           >
             <option value="">— Chọn công việc để thực hiện thao tác —</option>
             <optgroup label="Có lỗi / Trễ hạn">
@@ -719,11 +719,11 @@ public void process(String input) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && send()}
               placeholder="Nhập tin nhắn cho Trợ lý AI..."
-              className="flex-1 p-3 bg-black border border-gray-700 focus:border-blue-500 rounded-xl text-sm text-white outline-none placeholder-gray-600"
+              className="flex-1 p-3 bg-gray-50 border border-gray-300 focus:border-blue-500 rounded-xl text-sm text-gray-900 outline-none placeholder-gray-400 dark:bg-black dark:border-gray-700 dark:text-white dark:placeholder-gray-600"
             />
             <button
               onClick={send}
-              className="px-5 py-3 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold transition"
+              className="px-5 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-semibold transition"
             >
               Gửi
             </button>
@@ -735,19 +735,19 @@ public void process(String input) {
       <div className="w-72 flex flex-col gap-4">
 
         {/* Overdue tasks list */}
-        <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-red-400 uppercase tracking-wider mb-3">⚠️ Nguy cơ trễ hạn</p>
+        <div className="rounded-2xl p-4 bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
+          <p className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-3">⚠️ Nguy cơ trễ hạn</p>
           {tasks.filter(isOverdue).length === 0 ? (
-            <p className="text-xs text-gray-600 italic">Không có task nào trễ hạn.
-              <span className="text-green-400"> Tuyệt vời!</span>
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">Không có task nào trễ hạn.
+              <span className="text-green-600 dark:text-green-400 font-semibold"> Tuyệt vời!</span>
             </p>
           ) : (
             <div className="space-y-2">
               {tasks.filter(isOverdue).map((t) => (
-                <div key={t.id} className="p-2 bg-red-900/10 border border-red-800/30 rounded-xl">
-                  <p className="text-xs font-medium text-red-300">{t.name}</p>
-                  {t.assignee && <p className="text-[10px] text-gray-500 mt-0.5">{t.assignee.name}</p>}
-                  <p className="text-[10px] text-red-500 mt-0.5">Hạn: {t.deadline}</p>
+                <div key={t.id} className="p-2 bg-red-50 border border-red-100 rounded-xl dark:bg-red-900/10 dark:border-red-800/30">
+                  <p className="text-xs font-medium text-red-800 dark:text-red-300">{t.name}</p>
+                  {t.assignee && <p className="text-[10px] text-gray-600 dark:text-gray-500 mt-0.5">{t.assignee.name}</p>}
+                  <p className="text-[10px] text-red-600 dark:text-red-500 mt-0.5 font-medium">Hạn: {t.deadline}</p>
                 </div>
               ))}
             </div>
@@ -755,16 +755,16 @@ public void process(String input) {
         </div>
 
         {/* Bug tasks */}
-        <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-yellow-400 uppercase tracking-wider mb-3">🐛 Lỗi kiểm thử</p>
+        <div className="rounded-2xl p-4 bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
+          <p className="text-xs font-bold text-amber-600 dark:text-yellow-400 uppercase tracking-wider mb-3">🐛 Lỗi kiểm thử</p>
           {tasks.filter((t) => t.bugCount > 0).length === 0 ? (
-            <p className="text-xs text-gray-600 italic">Không có lỗi nào.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">Không có lỗi nào.</p>
           ) : (
             <div className="space-y-2">
               {tasks.filter((t) => t.bugCount > 0).map((t) => (
-                <div key={t.id} className="p-2 bg-yellow-900/10 border border-yellow-800/30 rounded-xl">
-                  <p className="text-xs font-medium text-yellow-300">{t.name}</p>
-                  <p className="text-[10px] text-red-400 mt-0.5">{t.bugCount} lỗi tồn đỊng</p>
+                <div key={t.id} className="p-2 bg-amber-50 border border-amber-100 rounded-xl dark:bg-yellow-900/10 dark:border-yellow-800/30">
+                  <p className="text-xs font-medium text-amber-900 dark:text-yellow-300">{t.name}</p>
+                  <p className="text-[10px] text-red-600 dark:text-red-400 mt-0.5 font-medium">{t.bugCount} lỗi tồn đọng</p>
                 </div>
               ))}
             </div>
@@ -772,10 +772,10 @@ public void process(String input) {
         </div>
 
         {/* Tải trọng thành viên */}
-        <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-          <p className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-3">👥 Tải trọng nhóm</p>
+        <div className="rounded-2xl p-4 bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
+          <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">👥 Tải trọng nhóm</p>
           {team.length === 0 ? (
-            <p className="text-xs text-gray-600 italic">Chưa có thành viên.</p>
+            <p className="text-xs text-gray-500 dark:text-gray-400 italic">Chưa có thành viên.</p>
           ) : (
             <div className="space-y-2">
               {team.map((m) => {
@@ -784,13 +784,13 @@ public void process(String input) {
                 return (
                   <div key={m.id}>
                     <div className="flex justify-between text-[10px] mb-1">
-                      <span className="text-gray-300">{m.name}</span>
+                      <span className="text-gray-700 font-medium dark:text-gray-300">{m.name}</span>
                       <span className="text-gray-500">{cnt} task</span>
                     </div>
-                    <div className="h-1.5 bg-gray-800 rounded-full">
+                    <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full">
                       <div
                         className={`h-1.5 rounded-full transition-all ${
-                          pct >= 80 ? "bg-red-500" : pct >= 40 ? "bg-yellow-500" : "bg-green-500"
+                          pct >= 80 ? "bg-red-500" : pct >= 40 ? "bg-amber-500 dark:bg-yellow-500" : "bg-green-500"
                         }`}
                         style={{ width: `${Math.max(pct, 4)}%` }}
                       />
@@ -805,59 +805,59 @@ public void process(String input) {
 
       {/* HỘP THOẠI ĐỀ XUẤT HOÁN ĐỔI */}
       {reassignProposal && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#0b0f1a] border border-blue-700/50 rounded-2xl w-[480px] shadow-2xl shadow-blue-900/20 animate-fadeIn">
+        <div className="fixed inset-0 bg-gray-900/40 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white border border-blue-100 rounded-2xl w-[480px] shadow-2xl shadow-blue-500/10 animate-fadeIn dark:bg-[#0b0f1a] dark:border-blue-700/50 dark:shadow-blue-900/20">
 
-            <div className="px-6 pt-5 pb-4 border-b border-gray-800">
+            <div className="px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-blue-400 text-lg">✨</span>
-                <h2 className="font-bold text-white">AI đề xuất: Hoán đổi công việc</h2>
+                <span className="text-blue-600 dark:text-blue-400 text-lg">✨</span>
+                <h2 className="font-bold text-gray-900 dark:text-white">AI đề xuất: Hoán đổi công việc</h2>
               </div>
-              <p className="text-xs text-gray-400">Hệ thống sẽ tự động cập nhật Bảng Kanban sau khi xác nhận</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Hệ thống sẽ tự động cập nhật Bảng Kanban sau khi xác nhận</p>
             </div>
 
             <div className="px-6 py-5 space-y-4">
               {/* Task bị chuyển */}
-              <div className="p-4 bg-red-900/10 border border-red-800/30 rounded-xl">
-                <p className="text-[10px] text-red-400 uppercase font-semibold mb-1">Chuyển task này sang</p>
-                <p className="text-sm font-bold text-white">{reassignProposal.fromTask.name}</p>
-                <div className="flex items-center gap-2 mt-2 text-xs text-gray-400">
+              <div className="p-4 bg-red-50 border border-red-100 rounded-xl dark:bg-red-900/10 dark:border-red-800/30">
+                <p className="text-[10px] text-red-600 dark:text-red-400 uppercase font-semibold mb-1">Chuyển task này sang</p>
+                <p className="text-sm font-bold text-gray-900 dark:text-white">{reassignProposal.fromTask.name}</p>
+                <div className="flex items-center gap-2 mt-2 text-xs text-gray-600 dark:text-gray-400">
                   <span className="text-gray-500">
                     {reassignProposal.fromMember?.name || "(chưa giao)"}
                   </span>
-                  <span className="text-blue-400 font-bold">→</span>
-                  <span className="text-green-400 font-bold">{reassignProposal.toMember.name}</span>
+                  <span className="text-blue-600 dark:text-blue-400 font-bold">→</span>
+                  <span className="text-green-600 dark:text-green-400 font-bold">{reassignProposal.toMember.name}</span>
                 </div>
               </div>
 
               {/* Swap ngược lại */}
               {reassignProposal.swapTask && (
-                <div className="p-4 bg-blue-900/10 border border-blue-800/30 rounded-xl">
-                  <p className="text-[10px] text-blue-400 uppercase font-semibold mb-1">{reassignProposal.toMember.name} nhận lại</p>
-                  <p className="text-sm font-bold text-white">{reassignProposal.swapTask.name}</p>
+                <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl dark:bg-blue-900/10 dark:border-blue-800/30">
+                  <p className="text-[10px] text-blue-600 dark:text-blue-400 uppercase font-semibold mb-1">{reassignProposal.toMember.name} nhận lại</p>
+                  <p className="text-sm font-bold text-gray-900 dark:text-white">{reassignProposal.swapTask.name}</p>
                   <div className="flex items-center gap-2 mt-2 text-xs">
                     <span className="text-gray-500">{reassignProposal.toMember.name}</span>
-                    <span className="text-blue-400 font-bold">→</span>
-                    <span className="text-yellow-400 font-bold">{reassignProposal.fromMember?.name || "(không rõ)"}</span>
+                    <span className="text-blue-600 dark:text-blue-400 font-bold">→</span>
+                    <span className="text-amber-600 dark:text-yellow-400 font-bold">{reassignProposal.fromMember?.name || "(không rõ)"}</span>
                   </div>
                 </div>
               )}
 
-              <p className="text-xs text-gray-500 leading-relaxed">
-                Lý do: <span className="text-gray-300">{reassignProposal.toMember.name}</span> đang có khối lượng công việc thấp nhất trong nhóm — AI đánh giá có thể tiếp nhận task này nhanh hơn.
+              <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">
+                Lý do: <span className="font-semibold text-gray-800 dark:text-gray-300">{reassignProposal.toMember.name}</span> đang có khối lượng công việc thấp nhất trong nhóm — AI đánh giá có thể tiếp nhận task này nhanh hơn.
               </p>
             </div>
 
             <div className="flex gap-3 px-6 pb-5 justify-end">
               <button
                 onClick={() => setReassignProposal(null)}
-                className="px-4 py-2 text-sm text-gray-400 hover:text-white transition"
+                className="px-4 py-2 text-sm text-gray-500 hover:text-gray-800 transition dark:text-gray-400 dark:hover:text-white"
               >
                 Từ chối
               </button>
               <button
                 onClick={confirmReassign}
-                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-bold text-white transition"
+                className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-sm font-bold shadow-sm transition"
               >
                 ✅ ĐỒNG Ý — Hoán đổi ngay
               </button>
@@ -890,9 +890,9 @@ function ReportTab({ tasks, team, projectName }) {
   }, [tasks]);
 
   const riskColor =
-    riskScore < 30 ? { bar: "#22c55e", text: "text-green-400", label: "An toàn",          bg: "bg-green-500" } :
-    riskScore < 60 ? { bar: "#eab308", text: "text-yellow-400", label: "Rủi ro trung bình", bg: "bg-yellow-500" } :
-                     { bar: "#ef4444", text: "text-red-400",    label: "Nguy hiểm!",        bg: "bg-red-500" };
+    riskScore < 30 ? { bar: "#22c55e", text: "text-green-600 dark:text-green-400", label: "An toàn",           bg: "bg-green-500" } :
+    riskScore < 60 ? { bar: "#eab308", text: "text-amber-600 dark:text-yellow-400", label: "Rủi ro trung bình", bg: "bg-yellow-500" } :
+                     { bar: "#ef4444", text: "text-red-600 dark:text-red-400",    label: "Nguy hiểm!",        bg: "bg-red-500" };
 
   /* ── Biểu đồ 1: Trạng thái task ── */
   const taskStatusData = useMemo(() => [
@@ -962,18 +962,18 @@ function ReportTab({ tasks, team, projectName }) {
   }, [riskScore, tasks, memberPerfData]);
 
   const recStyle = {
-    danger:  { border: "border-red-800/50",    bg: "bg-red-900/10",    icon: "text-red-400",    title: "text-red-300" },
-    warning: { border: "border-yellow-800/50", bg: "bg-yellow-900/10", icon: "text-yellow-400", title: "text-yellow-300" },
-    success: { border: "border-green-800/50",  bg: "bg-green-900/10",  icon: "text-green-400",  title: "text-green-300" },
-    info:    { border: "border-blue-800/50",   bg: "bg-blue-900/10",   icon: "text-blue-400",   title: "text-blue-300" },
+    danger:  { border: "border-red-200 dark:border-red-800/50",    bg: "bg-red-50 dark:bg-red-900/10",    icon: "text-red-500 dark:text-red-400",    title: "text-red-800 dark:text-red-300" },
+    warning: { border: "border-amber-200 dark:border-yellow-800/50", bg: "bg-amber-50 dark:bg-yellow-900/10", icon: "text-amber-500 dark:text-yellow-400", title: "text-amber-800 dark:text-yellow-300" },
+    success: { border: "border-green-200 dark:border-green-800/50",  bg: "bg-green-50 dark:bg-green-900/10",  icon: "text-green-500 dark:text-green-400",  title: "text-green-800 dark:text-green-300" },
+    info:    { border: "border-blue-200 dark:border-blue-800/50",   bg: "bg-blue-50 dark:bg-blue-900/10",   icon: "text-blue-500 dark:text-blue-400",   title: "text-blue-800 dark:text-blue-300" },
   };
 
   const PieTooltip = ({ active, payload }) => {
     if (!active || !payload?.length) return null;
     return (
-      <div className="bg-[#111827] border border-gray-700 px-3 py-2 rounded-xl text-xs shadow-lg">
-        <p className="font-bold text-white">{payload[0].name}</p>
-        <p className="text-gray-300">{payload[0].value} task ({tasks.length > 0 ? ((payload[0].value / tasks.length) * 100).toFixed(0) : 0}%)</p>
+      <div className="bg-white border border-gray-200 dark:bg-[#111827] dark:border-gray-700 px-3 py-2 rounded-xl text-xs shadow-lg">
+        <p className="font-bold text-gray-900 dark:text-white">{payload[0].name}</p>
+        <p className="text-gray-600 dark:text-gray-300">{payload[0].value} task ({tasks.length > 0 ? ((payload[0].value / tasks.length) * 100).toFixed(0) : 0}%)</p>
       </div>
     );
   };
@@ -981,8 +981,8 @@ function ReportTab({ tasks, team, projectName }) {
   const BarTooltip = ({ active, payload, label }) => {
     if (!active || !payload?.length) return null;
     return (
-      <div className="bg-[#111827] border border-gray-700 px-3 py-2 rounded-xl text-xs shadow-lg">
-        <p className="font-bold text-white mb-1">{label}</p>
+      <div className="bg-white border border-gray-200 dark:bg-[#111827] dark:border-gray-700 px-3 py-2 rounded-xl text-xs shadow-lg">
+        <p className="font-bold text-gray-900 dark:text-white mb-1">{label}</p>
         {payload.map((p, i) => (
           <p key={i} style={{ color: p.color }}>{p.name}: {p.value}{p.name === "Commits" ? " lần" : "%"}</p>
         ))}
@@ -994,10 +994,10 @@ function ReportTab({ tasks, team, projectName }) {
     <div className="space-y-5">
 
       {/* ─── RISK METER ─── */}
-      <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-6">
+      <div className="bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800 rounded-2xl p-6">
         <div className="flex items-start justify-between mb-5">
           <div>
-            <h2 className="text-base font-bold text-white">Chỉ số Rủi ro Dự án</h2>
+            <h2 className="text-base font-bold text-gray-900 dark:text-white">Chỉ số Rủi ro Dự án</h2>
             <p className="text-xs text-gray-500 mt-0.5">Tự động tính toán từ dữ liệu task, lỗi và tiến độ</p>
           </div>
           <div className="text-right">
@@ -1008,7 +1008,7 @@ function ReportTab({ tasks, team, projectName }) {
 
         {/* Thanh đo */}
         <div className="relative mb-2">
-          <div className="h-6 bg-gray-900 rounded-full overflow-hidden border border-gray-800">
+          <div className="h-6 bg-gray-100 dark:bg-gray-900 rounded-full overflow-hidden border border-gray-200 dark:border-gray-800">
             <div
               className="h-full rounded-full transition-all duration-1000 ease-out"
               style={{
@@ -1020,30 +1020,30 @@ function ReportTab({ tasks, team, projectName }) {
           </div>
           {/* Threshold markers */}
           <div className="absolute top-0 h-6 flex items-center" style={{ left: "30%" }}>
-            <div className="w-px h-4 bg-green-500/50" />
+            <div className="w-px h-4 bg-green-600/40 dark:bg-green-500/50" />
           </div>
           <div className="absolute top-0 h-6 flex items-center" style={{ left: "60%" }}>
-            <div className="w-px h-4 bg-yellow-500/50" />
+            <div className="w-px h-4 bg-amber-600/40 dark:bg-yellow-500/50" />
           </div>
         </div>
-        <div className="flex text-[10px] text-gray-600 mb-5">
+        <div className="flex text-[10px] text-gray-500 dark:text-gray-600 mb-5 font-medium">
           <span className="flex-none">0%</span>
-          <span className="text-green-600/70 ml-[26%]">An toàn</span>
-          <span className="text-yellow-600/70 ml-[22%]">Trung bình</span>
-          <span className="text-red-600/70 ml-auto">100%</span>
+          <span className="text-green-600 ml-[26%]">An toàn</span>
+          <span className="text-amber-600 dark:text-yellow-600/70 ml-[22%]">Trung bình</span>
+          <span className="text-red-600 ml-auto">100%</span>
         </div>
 
         {/* Pills */}
         <div className="flex gap-3 flex-wrap">
           {[
-            { label: "Task trễ hạn",  val: tasks.filter(isOverdue).length,                                   color: "text-red-400 bg-red-900/20 border-red-800/40" },
-            { label: "Lỗi tồn đọng",  val: tasks.reduce((s, t) => s + (t.bugCount || 0), 0),                 color: "text-yellow-400 bg-yellow-900/20 border-yellow-800/40" },
-            { label: "Hoàn thành",    val: `${tasks.filter((t) => t.status === "done").length}/${tasks.length}`, color: "text-green-400 bg-green-900/20 border-green-800/40" },
-            { label: "Chưa phân công", val: tasks.filter((t) => !t.assignee && t.status !== "done").length,  color: "text-blue-400 bg-blue-900/20 border-blue-800/40" },
+            { label: "Task trễ hạn",  val: tasks.filter(isOverdue).length,                                 color: "text-red-700 bg-red-50 border-red-200 dark:text-red-400 dark:bg-red-900/20 dark:border-red-800/40" },
+            { label: "Lỗi tồn đọng",  val: tasks.reduce((s, t) => s + (t.bugCount || 0), 0),                 color: "text-amber-800 bg-amber-50 border-amber-200 dark:text-yellow-400 dark:bg-yellow-900/20 dark:border-yellow-800/40" },
+            { label: "Hoàn thành",    val: `${tasks.filter((t) => t.status === "done").length}/${tasks.length}`, color: "text-green-700 bg-green-50 border-green-200 dark:text-green-400 dark:bg-green-900/20 dark:border-green-800/40" },
+            { label: "Chưa phân công", val: tasks.filter((t) => !t.assignee && t.status !== "done").length,  color: "text-blue-700 bg-blue-50 border-blue-200 dark:text-blue-400 dark:bg-blue-900/20 dark:border-blue-800/40" },
           ].map((p) => (
             <div key={p.label} className={`flex items-center gap-2 px-3 py-1.5 border rounded-xl text-xs ${p.color}`}>
               <span className="font-bold text-sm">{p.val}</span>
-              <span className="opacity-70">{p.label}</span>
+              <span className="opacity-80 dark:opacity-70">{p.label}</span>
             </div>
           ))}
         </div>
@@ -1053,11 +1053,11 @@ function ReportTab({ tasks, team, projectName }) {
       <div className="grid grid-cols-2 gap-5">
 
         {/* Biểu đồ 1: Trạng thái task */}
-        <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-white mb-0.5">Tỷ lệ trạng thái Task</h3>
+        <div className="bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">Tỷ lệ trạng thái Task</h3>
           <p className="text-xs text-gray-500 mb-3">Phân bố công việc theo trạng thái hiện tại</p>
           {tasks.length === 0 ? (
-            <div className="flex items-center justify-center h-52 text-gray-600 text-sm">Chưa có task nào</div>
+            <div className="flex items-center justify-center h-52 text-gray-400 dark:text-gray-600 text-sm">Chưa có task nào</div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <PieChart>
@@ -1074,7 +1074,7 @@ function ReportTab({ tasks, team, projectName }) {
                 </Pie>
                 <Tooltip content={<PieTooltip />} />
                 <Legend
-                  formatter={(v) => <span className="text-xs text-gray-300">{v}</span>}
+                  formatter={(v) => <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">{v}</span>}
                   iconType="circle" iconSize={8}
                 />
               </PieChart>
@@ -1083,19 +1083,19 @@ function ReportTab({ tasks, team, projectName }) {
         </div>
 
         {/* Biểu đồ 2: Hiệu suất thành viên */}
-        <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-white mb-0.5">Hiệu suất thành viên</h3>
+        <div className="bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-0.5">Hiệu suất thành viên</h3>
           <p className="text-xs text-gray-500 mb-3">Tần suất commit và tỷ lệ Pass/Fail test case</p>
           {team.length === 0 ? (
-            <div className="flex items-center justify-center h-52 text-gray-600 text-sm">Chưa có thành viên</div>
+            <div className="flex items-center justify-center h-52 text-gray-400 dark:text-gray-600 text-sm">Chưa có thành viên</div>
           ) : (
             <ResponsiveContainer width="100%" height={220}>
               <BarChart data={memberPerfData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1f2937" />
-                <XAxis dataKey="name" tick={{ fill: "#9ca3af", fontSize: 11 }} />
-                <YAxis tick={{ fill: "#9ca3af", fontSize: 11 }} />
+                <CartesianGrid strokeDasharray="3 3" className="stroke-gray-100 dark:stroke-[#1f2937]" />
+                <XAxis dataKey="name" tick={{ fill: "#6b7280", fontSize: 11 }} />
+                <YAxis tick={{ fill: "#6b7280", fontSize: 11 }} />
                 <Tooltip content={<BarTooltip />} />
-                <Legend formatter={(v) => <span className="text-xs text-gray-300">{v}</span>} iconSize={8} />
+                <Legend formatter={(v) => <span className="text-xs text-gray-700 dark:text-gray-300 font-medium">{v}</span>} iconSize={8} />
                 <Bar dataKey="commits" name="Commits" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="pass"    name="Pass %"  fill="#22c55e" radius={[4, 4, 0, 0]} />
                 <Bar dataKey="fail"    name="Fail %"  fill="#ef4444" radius={[4, 4, 0, 0]} />
@@ -1106,11 +1106,11 @@ function ReportTab({ tasks, team, projectName }) {
       </div>
 
       {/* ─── AI RECOMMENDATIONS ─── */}
-      <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
+      <div className="bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800 rounded-2xl p-5">
         <div className="flex items-center gap-2 mb-4">
-          <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-          <h3 className="text-sm font-bold text-white">Phân tích & Khuyến nghị từ AI</h3>
-          <span className="text-[10px] text-gray-500 ml-auto">
+          <div className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 animate-pulse" />
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white">Phân tích & Khuyến nghị từ AI</h3>
+          <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-auto">
             Cập nhật: {new Date().toLocaleTimeString("vi-VN")}
           </span>
         </div>
@@ -1124,7 +1124,7 @@ function ReportTab({ tasks, team, projectName }) {
                   <span className="text-xl flex-shrink-0">{rec.icon}</span>
                   <div>
                     <p className={`text-sm font-bold mb-1 ${s.title}`}>{rec.title}</p>
-                    <p className="text-xs text-gray-400 leading-relaxed">{rec.body}</p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">{rec.body}</p>
                   </div>
                 </div>
               </div>
@@ -1135,36 +1135,36 @@ function ReportTab({ tasks, team, projectName }) {
         {/* Bảng chi tiết thành viên */}
         {team.length > 0 && (
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">
+            <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">
               Chi tiết hiệu suất từng thành viên
             </p>
-            <div className="overflow-x-auto rounded-xl border border-gray-800">
+            <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-gray-800">
               <table className="w-full text-xs">
-                <thead className="bg-gray-900/60">
+                <thead className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-200 dark:border-gray-800">
                   <tr>
                     {["Thành viên", "Task nhận", "Hoàn thành", "Commits", "Pass %", "Fail %", "Đánh giá"].map((h) => (
-                      <th key={h} className="text-left text-gray-500 py-2.5 px-4 font-medium whitespace-nowrap">{h}</th>
+                      <th key={h} className="text-left text-gray-500 dark:text-gray-400 py-2.5 px-4 font-semibold whitespace-nowrap">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-900">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-900">
                   {memberPerfData.map((m, i) => (
-                    <tr key={i} className="hover:bg-gray-900/30 transition">
-                      <td className="py-3 px-4 text-gray-200 font-medium">{m.fullName}</td>
-                      <td className="py-3 px-4 text-gray-400">{m.total}</td>
-                      <td className="py-3 px-4 text-green-400">{m.done}</td>
-                      <td className="py-3 px-4 text-blue-400">{m.commits}</td>
-                      <td className="py-3 px-4 text-green-400">{m.pass}%</td>
+                    <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-900/30 transition">
+                      <td className="py-3 px-4 text-gray-900 dark:text-gray-200 font-semibold">{m.fullName}</td>
+                      <td className="py-3 px-4 text-gray-600 dark:text-gray-400 font-medium">{m.total}</td>
+                      <td className="py-3 px-4 text-green-600 dark:text-green-400 font-medium">{m.done}</td>
+                      <td className="py-3 px-4 text-blue-600 dark:text-blue-400 font-medium">{m.commits}</td>
+                      <td className="py-3 px-4 text-green-600 dark:text-green-400 font-medium">{m.pass}%</td>
                       <td className="py-3 px-4">
-                        <span className={m.fail >= 50 ? "text-red-400 font-bold" : "text-gray-400"}>
+                        <span className={m.fail >= 50 ? "text-red-600 dark:text-red-400 font-bold" : "text-gray-500 dark:text-gray-400"}>
                           {m.fail}%
                         </span>
                       </td>
                       <td className="py-3 px-4">
-                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-semibold ${
-                          m.fail >= 50 ? "bg-red-900/30 text-red-400 border border-red-800/50" :
-                          m.fail >= 25 ? "bg-yellow-900/30 text-yellow-400 border border-yellow-800/50" :
-                                         "bg-green-900/30 text-green-400 border border-green-800/50"
+                        <span className={`px-2.5 py-1 rounded-lg text-[10px] font-bold border ${
+                          m.fail >= 50 ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800/50" :
+                          m.fail >= 25 ? "bg-amber-50 text-amber-800 border-amber-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800/50" :
+                                         "bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800/50"
                         }`}>
                           {m.fail >= 50 ? "Cần hỗ trợ" : m.fail >= 25 ? "Cần theo dõi" : "Tốt"}
                         </span>
@@ -1289,15 +1289,15 @@ function CICDTab({ tasks, team }) {
       <div className="grid grid-cols-3 gap-5">
 
         {/* ─── PIPELINE TIMELINE ─── */}
-        <div className="col-span-2 bg-[#0b0f1a] border border-gray-800 rounded-2xl overflow-hidden">
-          <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-800">
+        <div className="col-span-2 bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 rounded-2xl overflow-hidden">
+          <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-300 dark:border-gray-800">
             <div>
-              <h3 className="text-sm font-bold text-white">Lịch sử Đẩy Code & CI/CD</h3>
+              <h3 className="text-sm font-bold text-gray-900 dark:text-white">Lịch sử Đẩy Code & CI/CD</h3>
               <p className="text-[10px] text-gray-500 mt-0.5">Pipeline tự động chạy test sau mỗi commit</p>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-gray-400">Pipeline online</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">Pipeline online</span>
             </div>
           </div>
 
@@ -1305,20 +1305,20 @@ function CICDTab({ tasks, team }) {
             {commitHistory.map((c, idx) => {
               const s = statusConfig[c.status];
               return (
-                <div key={c.id} className={`px-5 py-3.5 hover:bg-gray-900/30 transition ${idx === 0 ? "bg-gray-900/20" : ""}`}>
+                <div key={c.id} className={`px-5 py-3.5 hover:bg-gray-100 dark:hover:bg-gray-900/30 transition ${idx === 0 ? "bg-gray-100 dark:bg-gray-900/20" : ""}`}>
                   <div className="flex items-start gap-3">
 
                     {/* Timeline dot */}
                     <div className="flex flex-col items-center flex-shrink-0 mt-1">
-                      <div className={`w-3 h-3 rounded-full ${s.dot} ring-2 ring-gray-900`} />
-                      {idx < commitHistory.length - 1 && <div className="w-px flex-1 bg-gray-800 mt-1" style={{ minHeight: "24px" }} />}
+                      <div className={`w-3 h-3 rounded-full ${s.dot} ring-2 ring-white dark:ring-gray-900`} />
+                      {idx < commitHistory.length - 1 && <div className="w-px flex-1 bg-gray-300 dark:bg-gray-800 mt-1" style={{ minHeight: "24px" }} />}
                     </div>
 
                     <div className="flex-1 min-w-0">
                       {/* Row 1: commit message + SHA */}
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-medium text-gray-200 truncate">{c.message}</p>
-                        <span className="font-mono text-[10px] text-gray-600 flex-shrink-0 bg-gray-900 px-1.5 py-0.5 rounded">#{c.sha}</span>
+                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{c.message}</p>
+                        <span className="font-mono text-[10px] flex-shrink-0 px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400">#{c.sha}</span>
                         {idx === 0 && <span className="text-[10px] px-1.5 py-0.5 bg-blue-700/30 border border-blue-700/50 text-blue-400 rounded">latest</span>}
                       </div>
 
@@ -1377,8 +1377,8 @@ function CICDTab({ tasks, team }) {
         <div className="flex flex-col gap-4">
 
           {/* Tỷ lệ build theo thành viên */}
-          <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-            <h4 className="text-xs font-bold text-white mb-3">Tỷ lệ thành công theo thành viên</h4>
+          <div className="rounded-2xl p-4 bg-white border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
+            <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-3">Tỷ lệ thành công theo thành viên</h4>
             {team.length === 0 ? (
               <p className="text-xs text-gray-600 italic">Chưa có thành viên</p>
             ) : (
@@ -1413,7 +1413,7 @@ function CICDTab({ tasks, team }) {
           </div>
 
           {/* Failed builds */}
-          <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
+          <div className="rounded-2xl p-4 bg-white border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
             <h4 className="text-xs font-bold text-red-400 mb-3">🔴 Builds thất bại gần đây</h4>
             {commitHistory.filter((c) => c.status === "failed").length === 0 ? (
               <p className="text-xs text-gray-600 italic">Không có build thất bại. <span className="text-green-400">Xuất sắc!</span></p>
@@ -1431,8 +1431,8 @@ function CICDTab({ tasks, team }) {
           </div>
 
           {/* Pipeline stages legend */}
-          <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-4">
-            <h4 className="text-xs font-bold text-white mb-3">Các giai đoạn Pipeline</h4>
+          <div className="rounded-2xl p-4 bg-white border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
+            <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-3">Các giai đoạn Pipeline</h4>
             <div className="space-y-2">
               {[
                 { name: "Build & Compile", status: "success", desc: "Maven / Gradle build" },
@@ -1637,11 +1637,11 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
         ))}
       </div>
 
-      {/* INVITE — chỉ owner thấy */}
+           {/* INVITE — chỉ owner thấy */}
       {isOwner && (
-        <div className="bg-[#0b0f1a] border border-gray-800 rounded-2xl p-5">
-          <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
-            <span className="text-blue-400 text-lg">＋</span>
+        <div className="bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <span className="text-blue-600 dark:text-blue-400 text-lg">＋</span>
             Mời Thành Viên Mới
           </h3>
 
@@ -1649,7 +1649,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
             {/* Search input */}
             <div className="relative">
               <svg
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
+                className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500"
                 fill="none" stroke="currentColor" viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -1660,17 +1660,17 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                 onChange={(e) => { setEmailQuery(e.target.value); }}
                 onFocus={() => emailQuery.trim().length >= 2 && setShowDrop(true)}
                 placeholder="Nhập email để tìm kiếm thành viên..."
-                className="w-full pl-10 pr-10 py-3 bg-black border border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-white placeholder-gray-500 transition"
+                className="w-full pl-10 pr-10 py-3 bg-gray-50 border border-gray-200 focus:bg-white focus:border-blue-500 dark:bg-black dark:border-gray-700 dark:focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition shadow-sm dark:shadow-none"
               />
               {/* Spinner */}
               {searching && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+                <div className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 border-2 border-blue-600 dark:border-blue-400 border-t-transparent rounded-full animate-spin" />
               )}
               {/* Clear button */}
               {!searching && emailQuery && (
                 <button
                   onClick={() => { setEmailQuery(""); setShowDrop(false); setResults([]); setSearchDone(false); }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-white text-lg leading-none transition"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:text-gray-500 dark:hover:text-white text-lg leading-none transition"
                 >
                   ×
                 </button>
@@ -1679,15 +1679,15 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
 
             {/* DROPDOWN KET QUA */}
             {showDrop && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#0d1120] border border-gray-700/80 rounded-2xl shadow-2xl shadow-black/60 z-50 overflow-hidden">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-200 dark:bg-[#0d1120] dark:border-gray-700/80 rounded-2xl shadow-xl dark:shadow-2xl dark:shadow-black/60 z-50 overflow-hidden">
 
                 {/* Loi API */}
                 {apiError && (
-                  <div className="flex items-start gap-3 px-5 py-4">
+                  <div className="flex items-start gap-3 px-5 py-4 bg-amber-50/50 dark:bg-transparent">
                     <span className="text-xl mt-0.5">⚠️</span>
                     <div>
-                      <p className="text-sm font-medium text-yellow-400">Không kết nối được tới server</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-sm font-semibold text-amber-800 dark:text-yellow-400">Không kết nối được tới server</p>
+                      <p className="text-xs text-amber-600 dark:text-gray-500 mt-0.5">
                         Vui lòng khởi động Spring Boot rồi thử lại.
                       </p>
                     </div>
@@ -1699,11 +1699,11 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                   <div className="flex items-center gap-3 px-5 py-4">
                     <span className="text-xl">🔍</span>
                     <div>
-                      <p className="text-sm text-gray-300">
+                      <p className="text-sm text-gray-700 dark:text-gray-300">
                         Không tìm thấy người dùng với email{" "}
-                        <span className="text-white font-medium">&ldquo;{emailQuery}&rdquo;</span>
+                        <span className="text-gray-900 dark:text-white font-semibold">&ldquo;{emailQuery}&rdquo;</span>
                       </p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
                         Kiểm tra lại email hoặc người dùng chưa đăng ký tài khoản.
                       </p>
                     </div>
@@ -1714,25 +1714,25 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                 {!apiError && results.length > 0 && results.map((u, idx) => (
                   <div
                     key={u.id}
-                    className={`flex items-center gap-4 px-4 py-3.5 hover:bg-blue-600/10 transition ${
-                      idx < results.length - 1 ? "border-b border-gray-800/70" : ""
+                    className={`flex items-center gap-4 px-4 py-3.5 hover:bg-blue-50 dark:hover:bg-blue-600/10 transition ${
+                      idx < results.length - 1 ? "border-b border-gray-100 dark:border-gray-800/70" : ""
                     }`}
                   >
                     {/* Avatar */}
                     <div
                       className={`w-11 h-11 rounded-full ${avatarColor(u.fullName || u.username)}
                         flex items-center justify-center text-base font-bold text-white flex-shrink-0
-                        shadow-lg ring-2 ring-black`}
+                        shadow-md ring-2 ring-white dark:ring-black`}
                     >
                       {(u.fullName || u.username)?.charAt(0)?.toUpperCase()}
                     </div>
 
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-white truncate">
+                      <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                         {u.fullName || u.username}
                       </p>
-                      <p className="text-xs text-gray-400 truncate">{u.email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{u.email}</p>
                     </div>
 
                     {/* Nut + them thanh vien */}
@@ -1741,15 +1741,15 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                       disabled={inviting === u.email}
                       title="Thêm vào nhóm"
                       className={`flex-shrink-0 w-9 h-9 rounded-full flex items-center justify-center
-                        font-bold text-lg transition-all shadow-md
+                        font-bold text-lg transition-all shadow-sm
                         ${
                           inviting === u.email
-                            ? "bg-gray-700 cursor-not-allowed"
-                            : "bg-blue-600 hover:bg-blue-500 hover:scale-110 active:scale-95 text-white"
+                            ? "bg-gray-100 text-gray-400 dark:bg-gray-700 dark:text-gray-300 cursor-not-allowed"
+                            : "bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-500 hover:scale-110 active:scale-95 text-white"
                         }`}
                     >
                       {inviting === u.email ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       ) : (
                         <span className="leading-none">＋</span>
                       )}
@@ -1764,33 +1764,33 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
 
       {/* MEMBERS GRID */}
       {team.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-gray-600 gap-3">
-          <div className="text-5xl opacity-20">👥</div>
-          <p className="text-gray-500 font-medium">Chưa có thành viên nào trong dự án</p>
-          {isOwner && <p className="text-sm">Sử dụng ô tìm kiếm phía trên để mời thành viên</p>}
+        <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-600 gap-3">
+          <div className="text-5xl opacity-40 dark:opacity-20">👥</div>
+          <p className="text-gray-600 dark:text-gray-500 font-medium">Chưa có thành viên nào trong dự án</p>
+          {isOwner && <p className="text-sm text-gray-400">Sử dụng ô tìm kiếm phía trên để mời thành viên</p>}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           {memberStats.map((m) => (
             <div
               key={m.id}
-              className="bg-[#0b0f1a] border border-gray-800 hover:border-blue-500/50 rounded-2xl p-5 transition-all"
+              className="bg-white border border-gray-200 hover:border-blue-400 dark:bg-[#0b0f1a] dark:border-gray-800 dark:hover:border-blue-500/50 rounded-2xl p-5 transition-all shadow-sm dark:shadow-none"
             >
               {/* Avatar + tên + badge */}
               <div className="flex items-start gap-3 mb-4">
-                <div className={`w-11 h-11 rounded-full ${avatarColor(m.name)} flex items-center justify-center text-base font-bold text-white flex-shrink-0`}>
+                <div className={`w-11 h-11 rounded-full ${avatarColor(m.name)} flex items-center justify-center text-base font-bold text-white flex-shrink-0 shadow-sm`}>
                   {m.name?.charAt(0)?.toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-white truncate">{m.name}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{m.name}</h3>
                     {m.overdue > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 bg-red-900/40 border border-red-700/50 text-red-400 rounded-full font-semibold">
+                      <span className="text-[10px] px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/40 dark:border-red-700/50 dark:text-red-400 rounded-full font-bold">
                         {m.overdue} trễ hạn
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-400 truncate mt-0.5">{m.email || ""}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{m.email || ""}</p>
                 </div>
 
                 {/* Nút xóa — chỉ owner */}
@@ -1798,11 +1798,11 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                   <button
                     onClick={() => handleRemove(m)}
                     disabled={removing === m.id}
-                    className="flex-shrink-0 p-1.5 text-gray-600 hover:text-red-400 hover:bg-red-900/20 rounded-lg transition"
+                    className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:text-gray-600 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition"
                     title="Xóa thành viên"
                   >
                     {removing === m.id ? (
-                      <div className="w-4 h-4 border-2 border-red-400 border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1815,12 +1815,12 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
               {/* Progress bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-gray-400">Tiến độ</span>
+                  <span className="text-gray-500 dark:text-gray-400 font-medium">Tiến độ</span>
                   <span className={`font-bold ${
-                    m.pct >= 80 ? "text-green-400" : m.pct >= 40 ? "text-blue-400" : "text-yellow-400"
+                    m.pct >= 80 ? "text-green-600 dark:text-green-400" : m.pct >= 40 ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-yellow-400"
                   }`}>{m.pct}%</span>
                 </div>
-                <div className="h-2 bg-gray-800 rounded-full overflow-hidden">
+                <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-700 ${m.barColor}`}
                     style={{ width: `${Math.max(m.pct, m.total > 0 ? 3 : 0)}%` }}
@@ -1831,35 +1831,35 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
               {/* Stats grid */}
               <div className="grid grid-cols-4 gap-2 text-center">
                 {[
-                  { val: m.total,      label: "Tổng",    color: "text-gray-300" },
-                  { val: m.done,       label: "Xong",    color: "text-green-400" },
-                  { val: m.inProgress, label: "Đang làm", color: "text-blue-400" },
-                  { val: m.bugs,       label: "Lỗi",     color: m.bugs > 0 ? "text-red-400" : "text-gray-600" },
+                  { val: m.total,      label: "Tổng",    color: "text-gray-800 dark:text-gray-300" },
+                  { val: m.done,       label: "Xong",    color: "text-green-600 dark:text-green-400" },
+                  { val: m.inProgress, label: "Đang làm", color: "text-blue-600 dark:text-blue-400" },
+                  { val: m.bugs,       label: "Lỗi",     color: m.bugs > 0 ? "text-red-600 dark:text-red-400" : "text-gray-400 dark:text-gray-600" },
                 ].map((s) => (
-                  <div key={s.label} className="bg-black/40 rounded-xl py-2">
+                  <div key={s.label} className="bg-gray-50 dark:bg-black/40 border border-gray-100 dark:border-transparent rounded-xl py-2">
                     <p className={`text-base font-bold ${s.color}`}>{s.val}</p>
-                    <p className="text-[10px] text-gray-600">{s.label}</p>
+                    <p className="text-[10px] text-gray-500 dark:text-gray-600 font-medium">{s.label}</p>
                   </div>
                 ))}
               </div>
 
               {/* Task list (nếu có) */}
               {m.myTasks.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-gray-800">
-                  <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-2">Công việc đang phụ trách</p>
-                  <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1">
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800">
+                  <p className="text-[10px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Công việc đang phụ trách</p>
+                  <div className="space-y-1.5 max-h-28 overflow-y-auto pr-1 custom-scrollbar">
                     {m.myTasks.map((t) => (
                       <div key={t.id} className="flex items-center gap-2">
                         <span className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${
                           t.status === "done"   ? "bg-green-500" :
                           t.status === "doing"  ? "bg-blue-500"  :
-                          t.status === "review" ? "bg-yellow-500" : "bg-gray-600"
+                          t.status === "review" ? "bg-amber-500" : "bg-gray-300 dark:bg-gray-600"
                         }`} />
-                        <span className={`text-xs truncate flex-1 ${
-                          isOverdue(t) ? "text-red-400" : "text-gray-400"
+                        <span className={`text-xs truncate flex-1 font-medium ${
+                          isOverdue(t) ? "text-red-600 dark:text-red-400 font-semibold" : "text-gray-600 dark:text-gray-400"
                         }`}>{t.name}</span>
-                        {t.status === "done" && <span className="text-[10px] text-green-500 flex-shrink-0">✓</span>}
-                        {isOverdue(t)       && <span className="text-[10px] text-red-400 flex-shrink-0">⚠</span>}
+                        {t.status === "done" && <span className="text-[10px] text-green-600 dark:text-green-500 flex-shrink-0 font-bold">✓</span>}
+                        {isOverdue(t)       && <span className="text-[10px] text-red-500 dark:text-red-400 flex-shrink-0">⚠</span>}
                       </div>
                     ))}
                   </div>
@@ -2070,18 +2070,18 @@ export default function ProjectDetailPage() {
 
   /* ── RENDER ── */
   return (
-    <div className="min-h-screen bg-[#070a12] text-white flex flex-col">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#070a12] text-gray-900 dark:text-white flex flex-col">
 
       {/* HEADER */}
       <div className="flex items-center gap-4 px-6 pt-5 pb-0">
         <button onClick={() => navigate("/project")} className="text-blue-500 hover:underline text-sm">
           ← Quay lại Dự Án
         </button>
-        <h1 className="text-xl font-bold text-white">{projectName}</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">{projectName}</h1>
       </div>
 
       {/* TABS */}
-      <div className="flex gap-0 px-6 mt-4 border-b border-gray-800">
+      <div className="flex gap-0 px-6 mt-4 border-b border-gray-300 dark:border-gray-800">
         {TABS.map((tab) => (
           <button
             key={tab.id}
@@ -2089,7 +2089,7 @@ export default function ProjectDetailPage() {
             className={`px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
               activeTab === tab.id
                 ? "border-blue-500 text-blue-400"
-                : "border-transparent text-gray-500 hover:text-gray-300"
+                : "border-transparent text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
             }`}
           >
             {tab.label}
@@ -2158,18 +2158,18 @@ export default function ProjectDetailPage() {
               {/* ADD COLUMN */}
               <div className="w-[280px] flex-shrink-0">
                 {newCol ? (
-                  <div className="bg-[#0b0f1a] border border-gray-700 p-3 rounded-2xl">
+                  <div className="bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-700 p-3 rounded-2xl">
                     <input
                       value={newColName}
                       onChange={(e) => setNewColName(e.target.value)}
                       onKeyDown={(e) => e.key === "Enter" && addColumn()}
-                      className="w-full bg-black border border-gray-600 px-2 py-1.5 mb-3 rounded-lg text-sm outline-none"
+                      className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white px-2 py-1.5 mb-3 rounded-lg text-sm outline-none"
                       placeholder="Tên cột..."
                       autoFocus
                     />
                     <div className="flex gap-2">
                       <button onClick={addColumn} className="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-sm">Thêm</button>
-                      <button onClick={() => setNewCol(false)} className="px-3 py-1.5 text-gray-400 hover:text-white text-sm">Hủy</button>
+                      <button onClick={() => setNewCol(false)} className="px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white text-sm">Hủy</button>
                     </div>
                   </div>
                 ) : (
@@ -2198,7 +2198,7 @@ export default function ProjectDetailPage() {
       {/* ── MODAL TẠO / SỬA CÔNG VIỆC ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-[#0b0f1a] border border-gray-700 rounded-2xl w-[440px] shadow-2xl">
+          <div className="bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-700 rounded-2xl w-[440px] shadow-2xl">
             <div className="flex justify-between items-center px-5 pt-5 pb-4 border-b border-gray-800">
               <h2 className="font-bold text-base">{editTask?.id ? "Chỉnh sửa công việc" : "Tạo công việc"}</h2>
               <button onClick={() => setModal(false)} className="text-gray-400 hover:text-white">✕</button>
@@ -2243,7 +2243,7 @@ export default function ProjectDetailPage() {
                           ? n <= 3 ? "border-green-500 bg-green-600/20 text-green-400"
                             : n <= 6 ? "border-yellow-500 bg-yellow-600/20 text-yellow-400"
                             : "border-red-500 bg-red-600/20 text-red-400"
-                          : "border-gray-700 bg-black text-gray-500 hover:border-gray-500"}`}
+                          : "border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-400 hover:border-gray-500"}`}
                     >
                       {n}
                     </button>
@@ -2282,10 +2282,10 @@ export default function ProjectDetailPage() {
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm transition
                               ${selected
                                 ? "border-blue-500 bg-blue-600/20 text-white"
-                                : "border-gray-700 bg-black text-gray-400 hover:border-gray-500"}`}
+                                : "border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-400 hover:border-gray-500"}`}
                           >
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
-                              ${selected ? "bg-blue-600 text-white" : "bg-gray-700 text-gray-300"}`}>
+                              ${selected ? "bg-blue-600 text-white" : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"}`}>
                               {m.name.charAt(0)}
                             </span>
                             {m.name}
