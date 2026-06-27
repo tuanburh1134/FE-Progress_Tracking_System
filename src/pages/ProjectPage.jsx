@@ -5,6 +5,8 @@ import apiClient from "../services/api";
 import { ENDPOINTS } from "../services/endpoints";
 import useAuthStore from "../store/authStore";
 import memberService from "../features/projects/services/memberService";
+import { useNavigate } from "react-router-dom";
+import { FiTrash2 } from "react-icons/fi";
 
 /* ─────────────────────────────────────────────
    Hằng số lựa chọn
@@ -596,23 +598,24 @@ export default function ProjectPage() {
   const [isOpen,    setIsOpen]    = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [deleteProject, setDeleteProject] = useState(null);
+  const navigate = useNavigate();
 
   /* Xoá dự án */
   const handleDelete = async () => {
 
-    if (!deleteProject) return;
+      if (!deleteProject) return;
 
-    try {
+      try {
 
-        await apiClient.delete(
-            ENDPOINTS.PROJECTS.DELETE(deleteProject.id)
-        );
+          await apiClient.delete(
+              ENDPOINTS.PROJECTS.DELETE(deleteProject.id)
+          );
 
-        setProjects(prev =>
-            prev.filter(p => p.id !== deleteProject.id)
-        );
+          setProjects(prev =>
+              prev.filter(p => p.id !== deleteProject.id)
+          );
 
-        setDeleteProject(null);
+          setDeleteProject(null);
 
       } catch (err) {
 
@@ -679,22 +682,35 @@ export default function ProjectPage() {
           )}
         </div>
 
-        <div className="flex gap-3">
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm kiếm dự án..."
-            className="bg-gray-100 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 w-52 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
-          />
+  <div className="flex gap-3">
 
-          <button
-            onClick={() => setIsOpen(true)}
-            className="bg-blue-600 hover:bg-blue-500 transition px-4 py-2 rounded-lg text-sm font-semibold text-white"
-          >
-            + Thêm Dự Án
-          </button>
-        </div>
-      </div>
+    <input
+      value={search}
+      onChange={(e) => setSearch(e.target.value)}
+      placeholder="Tìm kiếm dự án..."
+      className="bg-gray-100 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 w-52 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+    />
+
+    <button
+      onClick={() => navigate("/projects/trash")}
+      className="flex items-center gap-2 border border-red-500 text-red-500 px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white transition"
+    >
+      <FiTrash2 size={18} />
+      <span>Thùng rác</span>
+    </button>
+
+    <button
+      onClick={() => {
+        setEditingProject(null);
+        setIsOpen(true);
+      }}
+      className="bg-blue-600 hover:bg-blue-500 transition px-4 py-2 rounded-lg text-sm font-semibold text-white"
+    >
+      + Thêm Dự Án
+    </button>
+
+  </div>
+  </div>
 
       {/* LOADING */}
       {loading && (
@@ -828,7 +844,7 @@ export default function ProjectPage() {
 
                         <p className="text-center text-sm mt-2 text-gray-500">
 
-                            Hành động này không thể hoàn tác.
+                            Dự án sẽ được chuyển vào Thùng rác và có thể khôi phục sau.
 
                         </p>
 

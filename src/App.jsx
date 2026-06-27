@@ -6,6 +6,7 @@ import RegisterPage from "./pages/RegisterPage";
 import Dashboard from "./pages/Dashboard";
 import ProjectPage from "./pages/ProjectPage";
 import ProjectDetailPage from "./pages/ProjectDetailPage";
+import TrashProjectPage from "./pages/TrashProjectPage";
 import MainLayout from "./Layouts/MainLayout";
 import TeamPage from "./pages/TeamPage";
 import SettingPage from "./pages/SettingPage";
@@ -26,12 +27,8 @@ export default function App() {
 
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/team" element={<TeamPage />} />
-        {/* PROFILE */}
         <Route path="/profile" element={<ProfilePage />} />
-        {/* SETTINGS */}
         <Route path="/settings" element={<SettingPage />} />
-
-        
 
         {/* PROJECT LIST */}
         <Route
@@ -44,6 +41,12 @@ export default function App() {
           }
         />
 
+        {/* THÙNG RÁC */}
+        <Route
+          path="/projects/trash"
+          element={<TrashProjectPage />}
+        />
+
         {/* PROJECT DETAIL */}
         <Route
           path="/project/:id"
@@ -53,7 +56,9 @@ export default function App() {
               updateProject={(id, newTasks) => {
                 setProjectList((prev) =>
                   prev.map((p) =>
-                    p.id === id ? { ...p, tasks: newTasks } : p
+                    p.id === id
+                      ? { ...p, tasks: newTasks }
+                      : p
                   )
                 );
               }}
@@ -69,4 +74,3 @@ export default function App() {
     </Routes>
   );
 }
-

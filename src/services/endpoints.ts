@@ -36,7 +36,16 @@ export const ENDPOINTS = {
     CREATE: '/projects',
     DETAIL: (id: number) => `/projects/${id}`,
     UPDATE: (id: number) => `/projects/${id}`,
+    // Xóa mềm
     DELETE: (id: number) => `/projects/${id}`,
+    
+    TRASH: "/projects/trash",
+    
+    // Khôi phục
+    RESTORE: (id: number) => `/projects/${id}/restore`,
+
+    // Xóa vĩnh viễn
+    PERMANENT_DELETE: (id: number) => `/projects/${id}/permanent`,
     MEMBERS: (id: number) => `/projects/${id}/members`,
     ADD_MEMBER: (id: number) => `/projects/${id}/members`,
     REMOVE_MEMBER: (projectId: number, userId: number) =>
