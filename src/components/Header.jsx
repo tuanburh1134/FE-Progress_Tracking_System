@@ -8,10 +8,12 @@ import {
   FiCheck,
   FiX,
   FiUserX,
+  FiUsers,
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
 import { STORAGE_KEYS } from "../constants";
+import notificationService from "../features/projects/services/notificationService";
 
 // ─── LocalStorage key helpers ────────────────────────────────────────────────
 // Key để lưu thông báo hệ thống dành cho một user (người mời nhận thông báo từ chối, v.v.)
@@ -39,6 +41,7 @@ export default function Header({ open }) {
   const [notifications, setNotifications] = useState([]);   // task overdue / assigned
   const [sysNotifs, setSysNotifs] = useState([]);            // system notifs (e.g. bị từ chối)
   const [invitations, setInvitations] = useState([]);        // lời mời chờ
+  const [dbNotifs, setDbNotifs] = useState([]);              // DB notifications (teams, projects)
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpenNotification, setIsOpenNotification] = useState(false);
   const [activeTab, setActiveTab] = useState("all");
@@ -133,7 +136,16 @@ export default function Header({ open }) {
     const unreadInvites = myInvites.filter((i) => !seenIds.has(i.id)).length;
     const unreadTasks   = taskNotifs.filter((n) => !seenIds.has(n.id)).length;
     const unreadSysN    = rawSys.filter((n) => !n.readAt).length;
-    setUnreadCount(unreadInvites + unreadTasks + unreadSysN);
+
+    // Lấy thông báo từ DB backend
+    notificationService.getNotifications().then((list) => {
+      setDbNotifs(list);
+      const dbUnreadCount = list.filter((n) => !n.read).length;
+      setUnreadCount(unreadInvites + unreadTasks + unreadSysN + dbUnreadCount);
+    }).catch((err) => {
+      console.error("Error fetching DB notifications:", err);
+      setUnreadCount(unreadInvites + unreadTasks + unreadSysN);
+    });
   }, [currentUser]);
 
   // Mount & storage events
@@ -171,6 +183,11 @@ export default function Header({ open }) {
       const markedSys = rawSys.map((n) => n.readAt ? n : { ...n, readAt: now });
       localStorage.setItem(sysKey, JSON.stringify(markedSys));
       setSysNotifs(markedSys);
+
+      // Đánh dấu thông báo DB đã đọc
+      notificationService.markAllRead().then(() => {
+        setDbNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+      }).catch((err) => console.error("Error marking DB notifications as read:", err));
 
       // Reset badge
       setUnreadCount(0);
@@ -283,9 +300,9 @@ export default function Header({ open }) {
   };
 
   // ── Tổng hiển thị ─────────────────────────────────────────────────────────
-  const totalAll = invitations.length + notifications.length + sysNotifs.length;
+  const totalAll = invitations.length + notifications.length + sysNotifs.length + dbNotifs.length;
   const activeTasks = notifications.length;
-  const activeSys = sysNotifs.length;
+  const activeSys = sysNotifs.length + dbNotifs.length;
 
   return (
     <div
@@ -473,6 +490,28 @@ export default function Header({ open }) {
                     >
                       <FiX className="text-xs" />
                     </button>
+                  </div>
+                ))}
+                {/* ── THÔNG BÁO DB BACKEND (ADDED_TO_TEAM, ADDED_TO_PROJECT) ── */}
+                {(activeTab === "all" || activeTab === "system") && dbNotifs.map((notif) => (
+                  <div
+                    key={`db-${notif.id}`}
+                    className={`p-4 flex gap-3 transition-colors ${
+                      notif.read ? "opacity-60" : "bg-blue-950/10 hover:bg-blue-950/20"
+                    }`}
+                  >
+                    <div className="mt-0.5 text-base flex-shrink-0 text-blue-400">
+                      {notif.type === "ADDED_TO_TEAM" ? <FiUsers /> : <FiClipboard />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-blue-400">
+                        {notif.type === "ADDED_TO_TEAM" ? "Nhóm làm việc" : "Dự án mới"}
+                      </p>
+                      <p className="text-gray-300 text-xs mt-1 leading-relaxed">{notif.message}</p>
+                      {notif.read && (
+                        <p className="text-[9px] text-gray-600 mt-1">Đã đọc</p>
+                      )}
+                    </div>
                   </div>
                 ))}
 

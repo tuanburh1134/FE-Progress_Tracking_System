@@ -11,6 +11,7 @@ import MainLayout from "./Layouts/MainLayout";
 import TeamPage from "./pages/TeamPage";
 import SettingPage from "./pages/SettingPage";
 import ProfilePage from "./pages/ProfilePage";
+import CiCdReportPage from "./pages/CiCdReportPage";
 
 export default function App() {
   const [projectList, setProjectList] = useState([]);
@@ -29,6 +30,7 @@ export default function App() {
         <Route path="/team" element={<TeamPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingPage />} />
+        <Route path="/cicd" element={<CiCdReportPage />} />
 
         {/* PROJECT LIST */}
         <Route

@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { FiX, FiLoader, FiAlertCircle, FiSearch, FiUserPlus, FiUser } from "react-icons/fi";
+import { FiX, FiLoader, FiAlertCircle, FiSearch, FiUserPlus, FiUser, FiUsers } from "react-icons/fi";
 import ProjectCard from "../components/ProjectCard";
 import apiClient from "../services/api";
 import { ENDPOINTS } from "../services/endpoints";
 import useAuthStore from "../store/authStore";
 import memberService from "../features/projects/services/memberService";
+import teamService from "../features/projects/services/teamService";
 import { useNavigate } from "react-router-dom";
 import { FiTrash2 } from "react-icons/fi";
 
@@ -72,6 +73,25 @@ const [form, setForm] = useState({
   const dropdownRef = useRef(null);
 
   const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+
+  const [myTeams, setMyTeams] = useState([]);
+  const [selectedTeamId, setSelectedTeamId] = useState("");
+  const [teamsLoading, setTeamsLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchMyTeams = async () => {
+      setTeamsLoading(true);
+      try {
+        const teamsList = await teamService.getMyTeams();
+        setMyTeams(teamsList);
+      } catch (err) {
+        console.error("Error loading teams:", err);
+      } finally {
+        setTeamsLoading(false);
+      }
+    };
+    fetchMyTeams();
+  }, []);
 
   /* Debounce search */
   useEffect(() => {
@@ -227,19 +247,24 @@ const [form, setForm] = useState({
       //   throw new Error(backendError);
       // }
       
-      /* Mời từng thành viên sau khi tạo project thành công */
+      /* Thêm thành viên từ nhóm nếu chọn nhóm */
+      if (selectedTeamId && savedProject?.id) {
+        await teamService.addMembersFromTeamToProject(savedProject.id, Number(selectedTeamId));
+      }
+
+      /* Mời từng thành viên theo email sau khi tạo project thành công */
       if (!project && invitedMembers.length > 0 && savedProject?.id) {
         await Promise.allSettled(
           invitedMembers.map((m) =>
-            memberService.addMember(created.id, m.email)
+            memberService.addMember(savedProject.id, m.email)
           )
         );
 
         /* ── Ghi lời mời pending vào localStorage (invitee thấy trong Hòm thư) ── */
         const existingInvites = JSON.parse(localStorage.getItem("invitations") || "[]");
         const newInvites = invitedMembers.map((m) => ({
-          id: `invite-${created.id}-${m.id || m.email}-${Date.now()}`,
-          projectName: created.name || form.name.trim(),
+          id: `invite-${savedProject.id}-${m.id || m.email}-${Date.now()}`,
+          projectName: savedProject.name || form.name.trim(),
           inviterName: user?.fullName || user?.username || "Trưởng nhóm",
           inviterId:   user?.id,
           inviteeEmail: m.email,
@@ -248,8 +273,8 @@ const [form, setForm] = useState({
           status: "pending",
           createdAt: Date.now(),
           projectData: {
-            id:          created.id,
-            name:        created.name || form.name.trim(),
+            id:          savedProject.id,
+            name:        savedProject.name || form.name.trim(),
             description: payload.description,
             priority:    payload.priority,
             startDate:   payload.startDate,
@@ -460,6 +485,32 @@ const [form, setForm] = useState({
               Mời Thành Viên
               <span className="text-gray-500 dark:text-gray-600 font-normal normal-case">(tuỳ chọn)</span>
             </h3>
+
+            {/* Chọn Nhóm (Thêm toàn bộ thành viên của nhóm) */}
+            <div className="mb-4">
+              <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
+                Chọn nhóm thành viên
+              </label>
+              <select
+                value={selectedTeamId}
+                onChange={(e) => setSelectedTeamId(e.target.value)}
+                className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white"
+                disabled={teamsLoading}
+              >
+                <option value="">-- Không chọn nhóm --</option>
+                {myTeams.map((team) => (
+                  <option key={team.id} value={team.id}>
+                    {team.name} ({team.memberCount} thành viên)
+                  </option>
+                ))}
+              </select>
+              {selectedTeamId && (
+                <p className="text-xs text-blue-500 mt-1 flex items-center gap-1">
+                  <FiUsers className="text-xs" />
+                  <span>Toàn bộ thành viên của nhóm này sẽ tự động được thêm vào dự án khi tạo/cập nhật.</span>
+                </p>
+              )}
+            </div>
 
             {/* Search input */}
             <div className="relative" ref={dropdownRef}>

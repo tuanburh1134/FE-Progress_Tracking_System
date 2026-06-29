@@ -15,6 +15,7 @@ export default function Sidebar({ open, setOpen }) {
     { name: "Thống Kê", path: "/dashboard" },
     { name: "Dự Án", path: "/project" },
     { name: "Nhóm", path: "/team" },
+    { name: "AI CI/CD", path: "/cicd" },
   ];
 
   return (

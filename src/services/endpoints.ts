@@ -87,4 +87,26 @@ export const ENDPOINTS = {
     PREDICT_BATCH: '/predict/batch',
     TRAINING_STATUS: '/model/status',
   },
+
+  // -------------------------------------------------------------------------
+  // Teams
+  // -------------------------------------------------------------------------
+  TEAMS: {
+    LIST:          '/teams',
+    CREATE:        '/teams',
+    DETAIL:        (id: number) => `/teams/${id}`,
+    DELETE:        (id: number) => `/teams/${id}`,
+    ADD_MEMBER:    (id: number) => `/teams/${id}/members`,
+    REMOVE_MEMBER: (teamId: number, userId: number) => `/teams/${teamId}/members/${userId}`,
+    ADD_TO_PROJECT:(projectId: number, teamId: number) => `/projects/${projectId}/members/team/${teamId}`,
+  },
+
+  // -------------------------------------------------------------------------
+  // Notifications
+  // -------------------------------------------------------------------------
+  NOTIFICATIONS: {
+    LIST:     '/notifications',
+    READ_ALL: '/notifications/read-all',
+    COUNT:    '/notifications/count',
+  },
 } as const
