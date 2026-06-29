@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiGithub } from "react-icons/fi";
 
 const STATUS_COLORS = {
   PLANNING:    "text-yellow-400 bg-yellow-400/10",
@@ -68,11 +68,24 @@ export default function ProjectCard({project, onEdit, onDelete,}) {
           </div>
       </div>
 
-      {/* Status badge */}
-      <div className="mb-3">
-        <span className={`text-xs px-2 py-1 rounded-full ${statusColor}`}>
+      {/* Status badge & GitHub */}
+      <div className="flex items-center gap-2 mb-3">
+        <span className={`text-xs px-2 py-0.5 rounded-full ${statusColor}`}>
           {project.statusLabel || project.status}
         </span>
+        {project.githubLink && (
+          <span 
+            onClick={(e) => {
+              e.stopPropagation();
+              window.open(project.githubLink, "_blank");
+            }}
+            className="inline-flex items-center gap-1 text-[11px] text-gray-700 dark:text-gray-400 bg-gray-100 hover:bg-gray-200 dark:bg-black dark:border dark:border-gray-800 hover:dark:border-gray-700 px-2 py-0.5 rounded-full transition"
+            title={project.githubLink}
+          >
+            <FiGithub className="text-xs" />
+            <span>Repo</span>
+          </span>
+        )}
       </div>
 
       {/* Progress bar */}

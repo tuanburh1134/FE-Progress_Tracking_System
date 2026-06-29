@@ -58,6 +58,7 @@ const [form, setForm] = useState({
     project?.startDate ||
     new Date().toISOString().split("T")[0],
   deadline: project?.deadline || "",
+  githubLink: project?.githubLink || "",
 });
 
   const [loading, setLoading] = useState(false);
@@ -202,6 +203,7 @@ const [form, setForm] = useState({
         sdlc: form.sdlc,
         startDate:   form.startDate,
         deadline:    form.deadline,
+        githubLink:  form.githubLink.trim() || null,
       };
 
       // console.log("Payload:", payload);
@@ -416,6 +418,24 @@ const [form, setForm] = useState({
                   rows={3}
                   className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white resize-none placeholder:text-gray-500 dark:placeholder:text-gray-600"
                 />
+              </div>
+
+              {/* GitHub Repo Link */}
+              <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
+                  Đường Dẫn GitHub Repository (Tùy chọn)
+                </label>
+                <input
+                  value={form.githubLink}
+                  onChange={(e) => set("githubLink", e.target.value)}
+                  placeholder="https://github.com/username/repo-name"
+                  className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-600"
+                />
+                {form.githubLink && (
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    * Đảm bảo bạn đã cấu hình Webhook trên repo này trỏ về link ngrok của bạn.
+                  </p>
+                )}
               </div>
             </div>
           </section>

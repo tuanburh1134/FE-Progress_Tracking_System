@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import { askGemini } from "../services/geminiService";
 import { useParams, useNavigate } from "react-router-dom";
+import CICDTab from "../components/CICDTab";
 import {
   DndContext, DragOverlay, PointerSensor,
   useSensor, useSensors, closestCorners,
@@ -373,6 +374,7 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
 const TABS = [
   { id: "kanban",   label: "Bảng công việc (Kanban)" },
   { id: "cicd",     label: "Luồng Đẩy Code & Kiểm thử (CI/CD Git)" },
+  { id: "codeLog",  label: "Nhật ký code" },
   { id: "ai",       label: "Trung tâm Trợ lý AI (AI Hub & Chatbot)" },
   { id: "report",   label: "Báo cáo & Phân tích Rủi ro" },
   { id: "members",  label: "Thành viên" },
@@ -1180,13 +1182,10 @@ function ReportTab({ tasks, team, projectName }) {
     </div>
   );
 }
-
 /* ═══════════════════════════════════════
-   CI/CD TAB
+   MOCK CI/CD TAB (Luồng Đẩy Code & Kiểm thử (CI/CD Git))
 ═══════════════════════════════════════ */
-function CICDTab({ tasks, team }) {
-
-  /* Tạo lịch sử commit giả lập có gắn với task thật */
+function MockCICDTab({ tasks, team }) {
   const commitHistory = useMemo(() => {
     const statuses = ["success", "success", "success", "failed", "running"];
     const msgs = [
@@ -1234,7 +1233,6 @@ function CICDTab({ tasks, team }) {
       }
     });
 
-    // Thêm vài commit không gắn task nếu không có team
     if (team.length === 0) {
       for (let i = 0; i < 5; i++) {
         rows.push({
@@ -1270,8 +1268,6 @@ function CICDTab({ tasks, team }) {
 
   return (
     <div className="space-y-5">
-
-      {/* ─── SUMMARY CARDS ─── */}
       <div className="grid grid-cols-4 gap-4">
         {[
           { label: "Tổng builds",    val: commitHistory.length, color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
@@ -1287,8 +1283,6 @@ function CICDTab({ tasks, team }) {
       </div>
 
       <div className="grid grid-cols-3 gap-5">
-
-        {/* ─── PIPELINE TIMELINE ─── */}
         <div className="col-span-2 bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 rounded-2xl overflow-hidden">
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-300 dark:border-gray-800">
             <div>
@@ -1307,22 +1301,18 @@ function CICDTab({ tasks, team }) {
               return (
                 <div key={c.id} className={`px-5 py-3.5 hover:bg-gray-100 dark:hover:bg-gray-900/30 transition ${idx === 0 ? "bg-gray-100 dark:bg-gray-900/20" : ""}`}>
                   <div className="flex items-start gap-3">
-
-                    {/* Timeline dot */}
                     <div className="flex flex-col items-center flex-shrink-0 mt-1">
                       <div className={`w-3 h-3 rounded-full ${s.dot} ring-2 ring-white dark:ring-gray-900`} />
                       {idx < commitHistory.length - 1 && <div className="w-px flex-1 bg-gray-300 dark:bg-gray-800 mt-1" style={{ minHeight: "24px" }} />}
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      {/* Row 1: commit message + SHA */}
                       <div className="flex items-center gap-2 mb-1">
                         <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{c.message}</p>
                         <span className="font-mono text-[10px] flex-shrink-0 px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 dark:bg-gray-900 dark:text-gray-400">#{c.sha}</span>
                         {idx === 0 && <span className="text-[10px] px-1.5 py-0.5 bg-blue-700/30 border border-blue-700/50 text-blue-400 rounded">latest</span>}
                       </div>
 
-                      {/* Row 2: author + branch + time */}
                       <div className="flex items-center gap-3 text-[11px] text-gray-500 mb-2">
                         <div className="flex items-center gap-1">
                           <div className="w-4 h-4 rounded-full bg-indigo-700 text-white flex items-center justify-center text-[8px] font-bold">
@@ -1344,14 +1334,11 @@ function CICDTab({ tasks, team }) {
                         )}
                       </div>
 
-                      {/* Row 3: test results pipeline */}
                       <div className="flex items-center gap-2">
-                        {/* Status badge */}
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold border rounded-lg ${s.text} ${s.border} ${s.bg}`}>
                           <span>{s.icon}</span> {s.label}
                         </span>
 
-                        {/* Mini test bar */}
                         <div className="flex items-center gap-1.5 flex-1">
                           <div className="flex-1 h-1.5 bg-gray-900 rounded-full overflow-hidden max-w-[120px]">
                             <div
@@ -1373,10 +1360,7 @@ function CICDTab({ tasks, team }) {
           </div>
         </div>
 
-        {/* ─── RIGHT PANEL ─── */}
         <div className="flex flex-col gap-4">
-
-          {/* Tỷ lệ build theo thành viên */}
           <div className="rounded-2xl p-4 bg-white border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
             <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-3">Tỷ lệ thành công theo thành viên</h4>
             {team.length === 0 ? (
@@ -1412,7 +1396,6 @@ function CICDTab({ tasks, team }) {
             )}
           </div>
 
-          {/* Failed builds */}
           <div className="rounded-2xl p-4 bg-white border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
             <h4 className="text-xs font-bold text-red-400 mb-3">🔴 Builds thất bại gần đây</h4>
             {commitHistory.filter((c) => c.status === "failed").length === 0 ? (
@@ -1430,7 +1413,6 @@ function CICDTab({ tasks, team }) {
             )}
           </div>
 
-          {/* Pipeline stages legend */}
           <div className="rounded-2xl p-4 bg-white border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
             <h4 className="text-xs font-bold text-gray-900 dark:text-white mb-3">Các giai đoạn Pipeline</h4>
             <div className="space-y-2">
@@ -1883,6 +1865,7 @@ export default function ProjectDetailPage() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   const [activeTab, setActiveTab] = useState("kanban");
+  const [projectObj, setProjectObj] = useState(null);
   const [projectName, setProjectName] = useState("");
   const [columns, setColumns] = useState([]);
   const [tasks, setTasks] = useState([]);
@@ -1915,8 +1898,26 @@ export default function ProjectDetailPage() {
   /* ── LOAD ── */
   useEffect(() => {
     const projects = JSON.parse(localStorage.getItem("projects")) || [];
-    const current = projects.find((p) => p.id === id);
-    if (current) setProjectName(current.name);
+    const current = projects.find((p) => String(p.id) === String(id));
+    if (current) {
+      setProjectName(current.name);
+      setProjectObj(current);
+    }
+
+    const loadProjectFromApi = async () => {
+      try {
+        const { default: apiClient } = await import("../services/api");
+        const res = await apiClient.get(`/projects/${id}`);
+        const data = res.data?.data;
+        if (data) {
+          setProjectObj(data);
+          setProjectName(data.name);
+        }
+      } catch (err) {
+        console.error("Lỗi khi tải chi tiết dự án từ API:", err);
+      }
+    };
+    loadProjectFromApi();
 
     const cols = JSON.parse(localStorage.getItem("columns_" + id)) || [];
     const tks  = JSON.parse(localStorage.getItem("tasks_" + id)) || [];
@@ -2104,7 +2105,11 @@ export default function ProjectDetailPage() {
         )}
 
         {activeTab === "cicd" && (
-          <CICDTab tasks={tasks} team={team} />
+          <MockCICDTab tasks={tasks} team={team} />
+        )}
+
+        {activeTab === "codeLog" && (
+          <CICDTab tasks={tasks} team={team} project={projectObj} />
         )}
 
         {activeTab === "report" && (
