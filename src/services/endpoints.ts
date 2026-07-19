@@ -22,6 +22,7 @@ export const ENDPOINTS = {
   // -------------------------------------------------------------------------
   USERS: {
     LIST: '/users',
+    CREATE: '/users',
     DETAIL: (id: number) => `/users/${id}`,
     UPDATE_PROFILE: (id: number) => `/users/${id}`,
     UPDATE_AVATAR: (id: number) => `/users/${id}/avatar`,

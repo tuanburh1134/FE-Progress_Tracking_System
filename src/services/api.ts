@@ -27,6 +27,11 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    try {
+      // Debug: log outgoing request URL and Authorization header presence
+      // eslint-disable-next-line no-console
+      console.debug('apiClient.request', `${config.baseURL ?? ''}${config.url ?? ''}`, 'hasAuth:', !!config.headers?.Authorization)
+    } catch (e) {}
     return config
   },
   error => Promise.reject(error)

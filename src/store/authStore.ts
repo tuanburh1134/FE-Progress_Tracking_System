@@ -41,19 +41,28 @@ const useAuthStore = create<AuthState>()(
       isAuthenticated: false,
 
       setAuth: (user, accessToken) => {
+        localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(user))
         set({ user, accessToken, isAuthenticated: true })
       },
 
       clearAuth: () => {
         // Xóa cả localStorage thủ công để đảm bảo clean
         localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+        localStorage.removeItem(STORAGE_KEYS.USER_INFO)
+        localStorage.removeItem('auth-storage')
         set({ user: null, accessToken: null, isAuthenticated: false })
       },
 
       updateUser: updates => {
-        set(state => ({
-          user: state.user ? { ...state.user, ...updates } : null,
-        }))
+        set(state => {
+          const updatedUser = state.user ? { ...state.user, ...updates } : null
+          if (updatedUser) {
+            localStorage.setItem(STORAGE_KEYS.USER_INFO, JSON.stringify(updatedUser))
+          }
+          return {
+            user: updatedUser,
+          }
+        })
       },
     }),
     {

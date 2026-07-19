@@ -12,6 +12,7 @@ import {
 } from "react-icons/fi";
 import { useNavigate } from "react-router-dom";
 import useAuthStore from "../store/authStore";
+import authService from "../features/auth/services/authService";
 import { STORAGE_KEYS } from "../constants";
 import notificationService from "../features/projects/services/notificationService";
 
@@ -23,17 +24,25 @@ export default function Header({ open }) {
   const navigate = useNavigate();
 
   const storeUser = useAuthStore((s) => s.user);
-  const localUser = (() => {
+  const persistedUser = (() => {
     try {
-      return JSON.parse(
+      const raw =
         localStorage.getItem(STORAGE_KEYS.USER_INFO) ||
         localStorage.getItem("user") ||
-        "null"
-      );
-    } catch { return null; }
-  })();
-  const currentUser = storeUser || localUser;
+        localStorage.getItem("auth-storage");
+      if (!raw) return null;
 
+      const parsed = JSON.parse(raw);
+      if (!parsed) return null;
+      if (parsed.user) return parsed.user;
+      if (parsed.state?.user) return parsed.state.user;
+      return parsed;
+    } catch {
+      return null;
+    }
+  })();
+
+  const currentUser = storeUser || persistedUser;
   const name = currentUser?.fullName || currentUser?.username || "User";
   const firstLetter = name.charAt(0).toUpperCase();
 
@@ -50,11 +59,9 @@ export default function Header({ open }) {
   const avatarRef = useRef(null);
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
-    localStorage.removeItem(STORAGE_KEYS.USER_INFO);
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN);
+    authService.logout();
     useAuthStore.getState().clearAuth();
-    navigate("/login");
+    window.location.href = "/login";
   };
 
   // ── LocalStorage key: danh sách ID đã xem ─────────────────────────────────

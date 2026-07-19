@@ -96,6 +96,7 @@ export const ROUTES = {
   PROJECT_DETAIL: '/projects/:projectId',
   PROJECT_KANBAN: '/projects/:projectId/kanban',
   TASKS: '/tasks',
+  ADMIN: '/admin',
   PROFILE: '/profile',
 
   // AI

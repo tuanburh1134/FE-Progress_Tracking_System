@@ -1,20 +1,22 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import useAuthStore from "../store/authStore";
 
 export default function Sidebar({ open, setOpen }) {
-  const [user, setUser] = useState(null);
+  const currentUser = useAuthStore((s) => s.user);
   const navigate = useNavigate();
   const location = useLocation();
 
-  useEffect(() => {
-    const data = JSON.parse(localStorage.getItem("user"));
-    setUser(data);
-  }, []);
+  const isAdmin = useMemo(
+    () => currentUser?.role?.toString?.().toUpperCase() === "ADMIN",
+    [currentUser]
+  );
 
   const menu = [
     { name: "Thống Kê", path: "/dashboard" },
     { name: "Dự Án", path: "/project" },
     { name: "Nhóm", path: "/team" },
+    ...(isAdmin ? [{ name: "Admin", path: "/admin" }] : []),
   ];
 
   return (
