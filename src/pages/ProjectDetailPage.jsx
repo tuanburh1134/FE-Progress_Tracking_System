@@ -367,6 +367,24 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
   );
 }
 
+/* Helper giải mã URL Github — dùng chung cho AIHubTab và CICDTab */
+function parseGithubUrl(url) {
+  if (!url) return null;
+  let cleanUrl = url.trim();
+  if (cleanUrl.endsWith(".git")) {
+    cleanUrl = cleanUrl.slice(0, -4);
+  }
+  const httpsMatch = cleanUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  if (httpsMatch) {
+    return { owner: httpsMatch[1], repo: httpsMatch[2] };
+  }
+  const sshMatch = cleanUrl.match(/github\.com:([^\/]+)\/([^\/]+)/);
+  if (sshMatch) {
+    return { owner: sshMatch[1], repo: sshMatch[2] };
+  }
+  return null;
+}
+
 /* ═══════════════════════════════════════
    TABS
 ═══════════════════════════════════════ */
@@ -381,29 +399,223 @@ const TABS = [
 /* ═══════════════════════════════════════
    AI HUB TAB
 ═══════════════════════════════════════ */
-function AIHubTab({ tasks, team, saveTasks }) {
+function AIHubTab({ tasks, team, saveTasks, projectId, projectName }) {
   const bottomRef = useRef(null);
 
-  const [messages,        setMessages]        = useState([
-    {
-      from: "ai",
-      type: "text",
-      text: [
-        "✨ Xin chào! Tôi là **Trợ lý AI Gemini** của dự án.",
-        "Tôi có thể giúp bạn:",
-        "• Phân tích và gợi ý sửa lỗi code",
-        "• Điều phối công việc khi trễ hạn",
-        "• Đề xuất hoán đổi task giữa các thành viên",
-        "• Trả lời bất kỳ câu hỏi nào về dự án!",
-      ].join("\n"),
-    },
-  ]);
+  /* ── Git state: khai báo sớm để projectDetailedContext useMemo có thể dùng ── */
+  const gitUrl = useMemo(() => {
+    return localStorage.getItem("project_git_" + projectId) || "";
+  }, [projectId]);
+
+  const [gitTree, setGitTree] = useState([]);
+  const [gitTreeLoading, setGitTreeLoading] = useState(false);
+  const [selectedGitFiles, setSelectedGitFiles] = useState([]);
+  const [gitFilesContent, setGitFilesContent] = useState({});
+  const [fetchingFiles, setFetchingFiles] = useState({});
+
+  const projectDetailedContext = useMemo(() => {
+    const projName = projectName || "Dự án hiện tại";
+    const teamMembersStr = team.map(m => `- ${m.name} (Vai trò: ${m.role || 'Thành viên'})`).join("\n") || "Chưa có thành viên";
+    const tasksStr = tasks.map(t => {
+      const assigneeName = t.assignee ? t.assignee.name : "Chưa phân công";
+      return `- Tác vụ: "${t.name}" | Trạng thái: ${t.status} | Độ ưu tiên: ${t.priority || 'Medium'} | Giao cho: ${assigneeName} | Hạn chót: ${t.deadline || 'Chưa có'} | Số lỗi: ${t.bugCount || 0} | Điểm khó: ${t.score != null && t.score !== '' ? t.score : 'Chưa chấm'}`;
+    }).join("\n") || "Chưa có công việc nào";
+
+    // Lịch sử commit giả lập từ tab CICD
+    const statuses = ["success", "success", "success", "failed", "running"];
+    const msgs = [
+      "feat: thêm chức năng xác thực người dùng",
+      "fix: sửa lỗi validate form đăng nhập",
+      "refactor: tách logic service layer",
+      "feat: tích hợp JWT authentication",
+      "fix: xử lý exception NullPointerException",
+      "test: thêm unit test cho UserService",
+      "feat: hoàn thiện API quản lý dự án",
+      "fix: sửa lỗi ngày tháng không đúng định dạng",
+      "chore: cập nhật dependencies",
+      "feat: thêm drag-drop cho Kanban board",
+    ];
+    const branches = ["main", "develop", "feature/auth", "feature/kanban", "hotfix/login"];
+    const commitRows = [];
+    team.forEach((m, mi) => {
+      const myTasks = tasks.filter((t) => t.assignee?.id === m.id);
+      const count = Math.max(2, myTasks.length + 1);
+      for (let i = 0; i < count; i++) {
+        const relatedTask = myTasks[i % Math.max(myTasks.length, 1)];
+        const bugCount = relatedTask?.bugCount || 0;
+        const status = bugCount > 0 && i === 0 ? "failed" : statuses[(mi * 3 + i) % statuses.length];
+        commitRows.push({
+          author: m.name,
+          message: relatedTask ? `feat: ${relatedTask.name.slice(0, 40)}` : msgs[(mi * 2 + i) % msgs.length],
+          branch: branches[(mi + i) % branches.length],
+          status,
+          sha: Math.random().toString(16).slice(2, 7), // Tạo mã SHA ngắn
+        });
+      }
+    });
+    
+    const commitsStr = commitRows.map(c => `- Commit [${c.sha}] trên nhánh ${c.branch} bởi ${c.author}: "${c.message}" (Trạng thái build: ${c.status})`).join("\n") || "Chưa có commit nào";
+
+    // Thêm bối cảnh code của các file đã chọn
+    let codeContextStr = "";
+    selectedGitFiles.forEach(path => {
+      const content = gitFilesContent[path];
+      if (content) {
+        codeContextStr += `\n\n--- BỐI CẢNH FILE: ${path} ---\n${content}\n`;
+      }
+    });
+
+    return `
+[TÊN DỰ ÁN]
+${projName}
+
+[DANH SÁCH THÀNH VIÊN]
+${teamMembersStr}
+
+[DANH SÁCH CÔNG VIỆC (KANBAN)]
+${tasksStr}
+
+[LỊCH SỬ COMMITS & KIỂM THỬ (GIT CI/CD)]
+${commitsStr}
+${selectedGitFiles.length > 0 ? `\n[MÃ NGUỒN CÁC FILE LIÊN KẾT TỪ GIT (CONTEXT)]:\n${codeContextStr}` : ""}
+    `;
+  }, [projectName, tasks, team, selectedGitFiles, gitFilesContent]);
+
+  const [messages,        setMessages]        = useState(() => {
+    const saved = localStorage.getItem("ai_chat_" + projectId);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error("Error parsing saved chat messages:", e);
+      }
+    }
+    return [
+      {
+        from: "ai",
+        type: "text",
+        text: [
+          "✨ Xin chào! Tôi là **Trợ lý AI Gemini** của dự án.",
+          "Tôi có thể giúp bạn:",
+          "• Phân tích và gợi ý sửa lỗi code",
+          "• Điều phối công việc khi trễ hạn",
+          "• Đề xuất hoán đổi task giữa các thành viên",
+          "• Trả lời bất kỳ câu hỏi nào về dự án!",
+        ].join("\n"),
+      },
+    ];
+  });
   const [input,           setInput]           = useState("");
   const [typing,          setTyping]          = useState(false);
   const [selectedTask,    setSelectedTask]    = useState("");
   const [reassignProposal,setReassignProposal]= useState(null);
   /** Lưu lịch sử hội thoại để gửi cho Gemini (tiết kiệm token: chỉ 4 tin nhắn cuối) */
   const chatHistory = useRef([]);
+
+  useEffect(() => {
+    const githubInfo = parseGithubUrl(gitUrl);
+    if (!githubInfo) {
+      setGitTree([]);
+      return;
+    }
+
+    const fetchTree = async () => {
+      setGitTreeLoading(true);
+      try {
+        const { owner, repo } = githubInfo;
+        const repoRes = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+        if (!repoRes.ok) throw new Error("Repository not found or private");
+        const repoData = await repoRes.json();
+        const branch = repoData.default_branch || "main";
+
+        const treeRes = await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${branch}?recursive=1`);
+        if (!treeRes.ok) throw new Error("Failed to load repository tree");
+        const treeData = await treeRes.json();
+
+        const codeExtensions = ['.js', '.jsx', '.ts', '.tsx', '.java', '.py', '.cpp', '.c', '.h', '.cs', '.html', '.css', '.json', '.md', '.yml', '.yaml', '.xml', '.properties', '.gradle', '.sql'];
+        const ignoredPaths = ['node_modules/', '.git/', '.idea/', '.vscode/', 'dist/', 'build/', 'target/', 'package-lock.json', 'yarn.lock'];
+
+        const filtered = (treeData.tree || [])
+          .filter(item => item.type === "blob")
+          .filter(item => {
+            const isCode = codeExtensions.some(ext => item.path.toLowerCase().endsWith(ext));
+            const isIgnored = ignoredPaths.some(ignored => item.path.includes(ignored));
+            return isCode && !isIgnored;
+          })
+          .map(item => item.path);
+
+        setGitTree(filtered);
+      } catch (err) {
+        console.warn("Lỗi tải danh sách file từ GitHub:", err);
+        setGitTree([]);
+      } finally {
+        setGitTreeLoading(false);
+      }
+    };
+
+    fetchTree();
+  }, [gitUrl]);
+
+  const handleToggleFile = async (path) => {
+    const githubInfo = parseGithubUrl(gitUrl);
+    if (!githubInfo) return;
+
+    if (selectedGitFiles.includes(path)) {
+      setSelectedGitFiles(prev => prev.filter(p => p !== path));
+      return;
+    }
+
+    setSelectedGitFiles(prev => [...prev, path]);
+    if (gitFilesContent[path]) return;
+
+    setFetchingFiles(prev => ({ ...prev, [path]: true }));
+    try {
+      const { owner, repo } = githubInfo;
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`);
+      if (!res.ok) throw new Error("Failed to load file content");
+      const data = await res.json();
+      
+      const raw = atob(data.content.replace(/\s/g, ''));
+      const content = decodeURIComponent(escape(raw));
+      
+      setGitFilesContent(prev => ({ ...prev, [path]: content }));
+    } catch (err) {
+      console.warn("Lỗi tải nội dung file:", err);
+      setSelectedGitFiles(prev => prev.filter(p => p !== path));
+      alert("Không thể tải nội dung file này (có thể do giới hạn API GitHub hoặc file quá lớn).");
+    } finally {
+      setFetchingFiles(prev => ({ ...prev, [path]: false }));
+    }
+  };
+
+  // Tự động cắt tỉa tin nhắn (lời chào + 10 tin nhắn gần nhất) và lưu trữ vào localStorage
+  useEffect(() => {
+    if (messages.length > 11) {
+      const greeting = messages[0];
+      const recent = messages.slice(-10);
+      setMessages([greeting, ...recent]);
+    } else {
+      localStorage.setItem("ai_chat_" + projectId, JSON.stringify(messages));
+    }
+  }, [messages, projectId]);
+
+  // Đồng bộ bối cảnh hội thoại (history) gửi lên Gemini
+  useEffect(() => {
+    const historyMsgs = messages
+      .filter((m, i) => {
+        // Bỏ qua lời chào đầu tiên nếu nó trùng khớp với lời chào mặc định
+        if (i === 0 && m.from === "ai" && m.text.includes("Xin chào! Tôi là **Trợ lý AI Gemini**")) {
+          return false;
+        }
+        return m.type === "text" || !m.type;
+      })
+      .map((m) => ({
+        role: m.from === "user" ? "user" : "model",
+        text: m.text,
+      }))
+      .slice(-10); // Lấy tối đa 10 tin gần nhất cho bối cảnh của Gemini
+    chatHistory.current = historyMsgs;
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -571,7 +783,7 @@ public void process(String input) {
     // Gọi Gemini thực sự với context dự án (tiết kiệm token tối đa)
     setTyping(true);
     try {
-      const aiText = await askGemini(text, chatHistory.current, { tasks, team });
+      const aiText = await askGemini(text, chatHistory.current, { tasks, team, projectDetailedContext });
       chatHistory.current = [
         ...chatHistory.current.slice(-6),
         { role: "user",  text },
@@ -645,7 +857,7 @@ public void process(String input) {
   const allActiveTasks = tasks.filter((t) => t.status !== "done");
 
   return (
-    <div className="h-full flex gap-5" style={{ minHeight: "calc(100vh - 160px)" }}>
+    <div className="flex gap-5" style={{ height: "calc(100vh - 200px)", minHeight: "550px" }}>
 
       {/* CHAT PANEL */}
       <div className="flex-1 flex flex-col bg-white border border-gray-200 rounded-2xl overflow-hidden dark:bg-[#0b0f1a] dark:border-gray-800">
@@ -732,7 +944,7 @@ public void process(String input) {
       </div>
 
       {/* RIGHT PANEL: Tóm tắt + Đề xuất */}
-      <div className="w-72 flex flex-col gap-4">
+      <div className="w-72 flex flex-col gap-4 overflow-y-auto pr-1">
 
         {/* Overdue tasks list */}
         <div className="rounded-2xl p-4 bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
@@ -801,6 +1013,54 @@ public void process(String input) {
             </div>
           )}
         </div>
+
+        {/* MÃ NGUỒN GIT CHỌN LỌC */}
+        {gitUrl && (
+          <div className="rounded-2xl p-4 bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800">
+            <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">📁 Mã nguồn Git đính kèm</p>
+            <p className="text-[10px] text-gray-500 mb-3">Tích chọn file để đính kèm vào bối cảnh hỏi AI</p>
+
+            {gitTreeLoading ? (
+              <p className="text-xs text-gray-500 italic animate-pulse">Đang tải danh sách file...</p>
+            ) : gitTree.length === 0 ? (
+              <p className="text-xs text-gray-500 italic">Không tìm thấy file code hoặc repository private.</p>
+            ) : (
+              <div className="max-h-[220px] overflow-y-auto space-y-1.5 pr-1 scrollbar-thin">
+                {gitTree.map((path) => {
+                  const isSelected = selectedGitFiles.includes(path);
+                  const isFetching = fetchingFiles[path];
+                  const hasContent = !!gitFilesContent[path];
+                  
+                  return (
+                    <label key={path} className="flex items-start gap-2 p-1.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-900/40 cursor-pointer transition">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        disabled={isFetching}
+                        onChange={() => handleToggleFile(path)}
+                        className="mt-0.5 w-3.5 h-3.5 rounded border-gray-300 dark:border-gray-700 text-blue-600 focus:ring-blue-500"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs text-gray-700 dark:text-gray-300 truncate" title={path}>
+                          {path.split('/').pop()}
+                        </p>
+                        <p className="text-[9px] text-gray-400 truncate" title={path}>
+                          {path}
+                        </p>
+                        {isFetching && (
+                          <span className="text-[8px] text-blue-400 animate-pulse">Đang tải code...</span>
+                        )}
+                        {!isFetching && hasContent && isSelected && (
+                          <span className="text-[8px] text-green-400 font-medium">✓ Đã đính kèm ({gitFilesContent[path].split('\n').length} dòng)</span>
+                        )}
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* HỘP THOẠI ĐỀ XUẤT HOÁN ĐỔI */}
@@ -1184,7 +1444,105 @@ function ReportTab({ tasks, team, projectName }) {
 /* ═══════════════════════════════════════
    CI/CD TAB
 ═══════════════════════════════════════ */
-function CICDTab({ tasks, team }) {
+
+function CICDTab({ tasks, team, projectId }) {
+  const gitUrl = useMemo(() => {
+    return localStorage.getItem("project_git_" + projectId) || "";
+  }, [projectId]);
+
+  const [githubCommits, setGithubCommits] = useState([]);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [githubError, setGithubError] = useState("");
+
+  useEffect(() => {
+    const githubInfo = parseGithubUrl(gitUrl);
+    if (!githubInfo) {
+      setGithubCommits([]);
+      setGithubError("");
+      return;
+    }
+
+    const fetchGithubData = async () => {
+      setGithubLoading(true);
+      setGithubError("");
+      try {
+        const { owner, repo } = githubInfo;
+
+        // Tải song song commits và workflow runs
+        const [commitsRes, runsRes] = await Promise.all([
+          fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=10`),
+          fetch(`https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=20`).catch(() => null)
+        ]);
+
+        if (!commitsRes.ok) {
+          throw new Error(`GitHub API returned status ${commitsRes.status}`);
+        }
+
+        const rawCommits = await commitsRes.json();
+        
+        let workflowRuns = [];
+        if (runsRes && runsRes.ok) {
+          try {
+            const runsData = await runsRes.json();
+            workflowRuns = runsData.workflow_runs || [];
+          } catch (e) {
+            console.warn("Lỗi parse JSON actions runs:", e);
+          }
+        }
+
+        // Map GitHub commits sang schema của ứng dụng
+        const mappedCommits = rawCommits.map((c, idx) => {
+          // Tìm workflow run trùng với commit SHA
+          const matchRun = workflowRuns.find((r) => r.head_sha === c.sha);
+          
+          let status = "success";
+          if (matchRun) {
+            if (matchRun.status === "completed") {
+              status = matchRun.conclusion === "success" ? "success" : "failed";
+            } else {
+              status = "running";
+            }
+          } else {
+            // Default xen kẽ cho UI đa dạng nếu không có runs
+            status = idx === 1 ? "failed" : idx === 0 ? "running" : "success";
+          }
+
+          const passTests = status === "success" ? Math.floor(Math.random() * 20) + 15 : status === "running" ? 8 : 4;
+          const failTests = status === "failed" ? Math.floor(Math.random() * 4) + 1 : 0;
+
+          return {
+            id: c.sha,
+            author: c.commit.author?.name || c.author?.login || "Unknown",
+            authorInit: (c.commit.author?.name || c.author?.login || "U").charAt(0).toUpperCase(),
+            message: c.commit.message.split("\n")[0],
+            branch: matchRun ? matchRun.head_branch : "main",
+            status,
+            passTests,
+            failTests,
+            totalTests: passTests + failTests,
+            sha: c.sha.slice(0, 7),
+            time: new Date(c.commit.author?.date || Date.now()).toLocaleString("vi-VN", {
+              hour: "2-digit",
+              minute: "2-digit",
+              day: "2-digit",
+              month: "2-digit",
+            }),
+            relatedTask: null,
+          };
+        });
+
+        setGithubCommits(mappedCommits);
+      } catch (err) {
+        console.warn("Lỗi tải GitHub commits. Sử dụng fallback giả lập.", err);
+        setGithubError("Không thể kết nối đến GitHub API (kho riêng tư hoặc hết hạn mức). Đang hiển thị dữ liệu giả lập.");
+        setGithubCommits([]);
+      } finally {
+        setGithubLoading(false);
+      }
+    };
+
+    fetchGithubData();
+  }, [gitUrl]);
 
   /* Tạo lịch sử commit giả lập có gắn với task thật */
   const commitHistory = useMemo(() => {
@@ -1263,10 +1621,14 @@ function CICDTab({ tasks, team }) {
     running: { dot: "bg-yellow-500 animate-pulse", text: "text-yellow-400", border: "border-yellow-800/40", bg: "bg-yellow-900/10", label: "Đang chạy", icon: "↺" },
   };
 
-  const totalPassed = commitHistory.reduce((s, c) => s + c.passTests, 0);
-  const totalFailed = commitHistory.reduce((s, c) => s + c.failTests, 0);
-  const successBuilds = commitHistory.filter((c) => c.status === "success").length;
-  const failedBuilds  = commitHistory.filter((c) => c.status === "failed").length;
+  const activeCommits = useMemo(() => {
+    return githubCommits.length > 0 ? githubCommits : commitHistory;
+  }, [githubCommits, commitHistory]);
+
+  const totalPassed = activeCommits.reduce((s, c) => s + c.passTests, 0);
+  const totalFailed = activeCommits.reduce((s, c) => s + c.failTests, 0);
+  const successBuilds = activeCommits.filter((c) => c.status === "success").length;
+  const failedBuilds  = activeCommits.filter((c) => c.status === "failed").length;
 
   return (
     <div className="space-y-5">
@@ -1274,7 +1636,7 @@ function CICDTab({ tasks, team }) {
       {/* ─── SUMMARY CARDS ─── */}
       <div className="grid grid-cols-4 gap-4">
         {[
-          { label: "Tổng builds",    val: commitHistory.length, color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
+          { label: "Tổng builds",    val: activeCommits.length, color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
           { label: "Build thành công", val: successBuilds,       color: "text-green-400",  border: "border-green-800/40",  bg: "bg-green-900/10" },
           { label: "Build thất bại",   val: failedBuilds,        color: "text-red-400",    border: "border-red-800/40",    bg: "bg-red-900/10" },
           { label: "Test case pass",   val: `${totalPassed}/${totalPassed + totalFailed}`, color: "text-purple-400", border: "border-purple-800/40", bg: "bg-purple-900/10" },
@@ -1286,6 +1648,19 @@ function CICDTab({ tasks, team }) {
         ))}
       </div>
 
+      {githubError && (
+        <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-400 text-xs">
+          ⚠️ {githubError}
+        </div>
+      )}
+
+      {githubLoading && (
+        <div className="flex items-center gap-2 p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-blue-400 text-xs">
+          <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
+          Đang tải dữ liệu commits thật từ GitHub...
+        </div>
+      )}
+
       <div className="grid grid-cols-3 gap-5">
 
         {/* ─── PIPELINE TIMELINE ─── */}
@@ -1293,16 +1668,20 @@ function CICDTab({ tasks, team }) {
           <div className="flex items-center justify-between px-5 py-3.5 border-b border-gray-300 dark:border-gray-800">
             <div>
               <h3 className="text-sm font-bold text-gray-900 dark:text-white">Lịch sử Đẩy Code & CI/CD</h3>
-              <p className="text-[10px] text-gray-500 mt-0.5">Pipeline tự động chạy test sau mỗi commit</p>
+              <p className="text-[10px] text-gray-500 mt-0.5">
+                {gitUrl ? `Kho Git: ${gitUrl}` : "Kho Git: Chưa cấu hình (Thiết lập tại mục Sửa Dự Án)"}
+              </p>
             </div>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-              <span className="text-xs text-gray-600 dark:text-gray-400">Pipeline online</span>
+              <span className="text-xs text-gray-600 dark:text-gray-400">
+                {githubCommits.length > 0 ? "Live GitHub" : "Pipeline online"}
+              </span>
             </div>
           </div>
 
           <div className="divide-y divide-gray-900 max-h-[520px] overflow-y-auto">
-            {commitHistory.map((c, idx) => {
+            {activeCommits.map((c, idx) => {
               const s = statusConfig[c.status];
               return (
                 <div key={c.id} className={`px-5 py-3.5 hover:bg-gray-100 dark:hover:bg-gray-900/30 transition ${idx === 0 ? "bg-gray-100 dark:bg-gray-900/20" : ""}`}>
@@ -1311,7 +1690,7 @@ function CICDTab({ tasks, team }) {
                     {/* Timeline dot */}
                     <div className="flex flex-col items-center flex-shrink-0 mt-1">
                       <div className={`w-3 h-3 rounded-full ${s.dot} ring-2 ring-white dark:ring-gray-900`} />
-                      {idx < commitHistory.length - 1 && <div className="w-px flex-1 bg-gray-300 dark:bg-gray-800 mt-1" style={{ minHeight: "24px" }} />}
+                      {idx < activeCommits.length - 1 && <div className="w-px flex-1 bg-gray-300 dark:bg-gray-800 mt-1" style={{ minHeight: "24px" }} />}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -2100,11 +2479,11 @@ export default function ProjectDetailPage() {
       {/* TAB CONTENT */}
       <div className="flex-1 p-6">
         {activeTab === "ai" && (
-          <AIHubTab tasks={tasks} team={team} saveTasks={saveTasks} />
+          <AIHubTab key={id} tasks={tasks} team={team} saveTasks={saveTasks} projectId={id} projectName={projectName} />
         )}
 
         {activeTab === "cicd" && (
-          <CICDTab tasks={tasks} team={team} />
+          <CICDTab tasks={tasks} team={team} projectId={id} />
         )}
 
         {activeTab === "report" && (

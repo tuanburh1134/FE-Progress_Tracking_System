@@ -44,12 +44,31 @@ function Avatar({ name, size = "sm" }) {
 /* ─────────────────────────────────────────────
    MODAL TẠO DỰ ÁN
 ──────────────────────────────────────────────── */
+/* Helper giải mã URL Github */
+function parseGithubUrl(url) {
+  if (!url) return null;
+  let cleanUrl = url.trim();
+  if (cleanUrl.endsWith(".git")) {
+    cleanUrl = cleanUrl.slice(0, -4);
+  }
+  const httpsMatch = cleanUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  if (httpsMatch) {
+    return { owner: httpsMatch[1], repo: httpsMatch[2] };
+  }
+  const sshMatch = cleanUrl.match(/github\.com:([^\/]+)\/([^\/]+)/);
+  if (sshMatch) {
+    return { owner: sshMatch[1], repo: sshMatch[2] };
+  }
+  return null;
+}
+
 function CreateProjectModal({onClose,onCreate,onUpdate,project,}) {
   const user = useAuthStore((s) => s.user);
 
 const [form, setForm] = useState({
   name: project?.name || "",
   projectCode: project?.projectCode || "",
+  gitUrl: project?.id ? (localStorage.getItem("project_git_" + project.id) || "") : "",
   description: project?.description || "",
   sdlc: project?.sdlc || "AGILE",
   priority: project?.priority || "MEDIUM",
@@ -62,6 +81,58 @@ const [form, setForm] = useState({
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState("");
 
+  const initialGit = project?.id ? (localStorage.getItem("project_git_" + project.id) || "") : "";
+  const [gitVerified, setGitVerified] = useState(initialGit ? "VERIFIED" : "IDLE");
+  const [gitVerifyError, setGitVerifyError] = useState("");
+
+  const verifyGitUrl = async () => {
+    const url = form.gitUrl.trim();
+    if (!url) {
+      setGitVerified("IDLE");
+      setGitVerifyError("");
+      return;
+    }
+
+    setGitVerified("VERIFYING");
+    setGitVerifyError("");
+
+    // 1. Kiểm tra định dạng link Git (hỗ trợ https, http, git@, có nhiều thư mục con)
+    const gitRegex = /^(https?:\/\/|git@)[a-zA-Z0-9_.-]+(:[0-9]+)?[\/:][a-zA-Z0-9_./-]+(\.git)?$/;
+    if (!gitRegex.test(url)) {
+      setGitVerified("FAILED");
+      setGitVerifyError("Định dạng link Git không hợp lệ. Phải bắt đầu bằng http://, https:// hoặc git@");
+      return;
+    }
+
+    // 2. Nếu là link GitHub, ping API kiểm tra sự tồn tại của Repository
+    const githubInfo = parseGithubUrl(url);
+    if (githubInfo) {
+      try {
+        const { owner, repo } = githubInfo;
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}`);
+        if (res.status === 200) {
+          setGitVerified("VERIFIED");
+          setGitVerifyError("");
+        } else if (res.status === 404) {
+          // Repo private hoặc không tồn tại. Vẫn cho phép lưu nhưng cảnh báo.
+          setGitVerified("VERIFIED");
+          setGitVerifyError("Lưu ý: Không tìm thấy repository công khai này (có thể là kho riêng tư). Vẫn chấp nhận định dạng.");
+        } else {
+          // Lỗi hạn mức hoặc mạng
+          setGitVerified("VERIFIED");
+          setGitVerifyError("Không thể xác minh sự tồn tại của repo (GitHub giới hạn rate limit). Vẫn chấp nhận định dạng.");
+        }
+      } catch (err) {
+        setGitVerified("VERIFIED");
+        setGitVerifyError("Lỗi kết nối kiểm tra. Vẫn chấp nhận định dạng.");
+      }
+    } else {
+      // Đối với các link git khác (như GitLab), nếu đúng regex là được chấp nhận
+      setGitVerified("VERIFIED");
+      setGitVerifyError("");
+    }
+  };
+
   /* ── Mời thành viên ── */
   const [emailQuery,      setEmailQuery]      = useState("");
   const [searchResults,   setSearchResults]   = useState([]);
@@ -71,7 +142,23 @@ const [form, setForm] = useState({
   const debounceRef = useRef(null);
   const dropdownRef = useRef(null);
 
-  const set = (key, val) => setForm((f) => ({ ...f, [key]: val }));
+  const set = (key, val) => {
+    setForm((f) => ({ ...f, [key]: val }));
+    if (key === "gitUrl") {
+      const trimmed = val.trim();
+      const savedGit = project?.id ? (localStorage.getItem("project_git_" + project.id) || "") : "";
+      if (trimmed === "") {
+        setGitVerified("IDLE");
+        setGitVerifyError("");
+      } else if (trimmed === savedGit) {
+        setGitVerified("VERIFIED");
+        setGitVerifyError("");
+      } else {
+        setGitVerified("UNVERIFIED");
+        setGitVerifyError("");
+      }
+    }
+  };
 
   /* Debounce search */
   useEffect(() => {
@@ -129,6 +216,11 @@ const [form, setForm] = useState({
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+
+    if (form.gitUrl.trim() !== "" && gitVerified !== "VERIFIED") {
+      setError("Vui lòng bấm nút 'Kiểm tra' để xác minh đường dẫn Git trước khi lưu dự án.");
+      return;
+    }
 
     console.log("Form state:", form);
 
@@ -226,20 +318,25 @@ const [form, setForm] = useState({
       // if (backendError) {
       //   throw new Error(backendError);
       // }
+
+      // Lưu git URL vào localStorage
+      if (savedProject?.id) {
+        localStorage.setItem("project_git_" + savedProject.id, form.gitUrl || "");
+      }
       
       /* Mời từng thành viên sau khi tạo project thành công */
       if (!project && invitedMembers.length > 0 && savedProject?.id) {
         await Promise.allSettled(
           invitedMembers.map((m) =>
-            memberService.addMember(created.id, m.email)
+            memberService.addMember(savedProject.id, m.email)
           )
         );
 
         /* ── Ghi lời mời pending vào localStorage (invitee thấy trong Hòm thư) ── */
         const existingInvites = JSON.parse(localStorage.getItem("invitations") || "[]");
         const newInvites = invitedMembers.map((m) => ({
-          id: `invite-${created.id}-${m.id || m.email}-${Date.now()}`,
-          projectName: created.name || form.name.trim(),
+          id: `invite-${savedProject.id}-${m.id || m.email}-${Date.now()}`,
+          projectName: savedProject.name || form.name.trim(),
           inviterName: user?.fullName || user?.username || "Trưởng nhóm",
           inviterId:   user?.id,
           inviteeEmail: m.email,
@@ -248,8 +345,8 @@ const [form, setForm] = useState({
           status: "pending",
           createdAt: Date.now(),
           projectData: {
-            id:          created.id,
-            name:        created.name || form.name.trim(),
+            id:          savedProject.id,
+            name:        savedProject.name || form.name.trim(),
             description: payload.description,
             priority:    payload.priority,
             startDate:   payload.startDate,
@@ -360,6 +457,58 @@ const [form, setForm] = useState({
                   placeholder="Nhập mã dự án (ví dụ: ABC-123)"
                   className="w-full p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-600"
                 />
+              </div>
+
+              {/* Đường dẫn Git */}
+              <div>
+                <label className="text-sm text-gray-700 dark:text-gray-300 block mb-1">
+                  Đường dẫn kho Git (Repository URL)
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    value={form.gitUrl}
+                    onChange={(e) => set("gitUrl", e.target.value)}
+                    placeholder="Nhập link git (ví dụ: https://github.com/user/project.git)"
+                    className="flex-1 p-2.5 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-sm text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-600"
+                  />
+                  {form.gitUrl.trim() !== "" && (
+                    <button
+                      type="button"
+                      onClick={verifyGitUrl}
+                      disabled={gitVerified === "VERIFYING"}
+                      className={`px-4 rounded-lg text-sm font-semibold transition ${
+                        gitVerified === "VERIFIED"
+                          ? "bg-green-600 text-white hover:bg-green-500"
+                          : gitVerified === "VERIFYING"
+                          ? "bg-gray-400 text-white cursor-not-allowed"
+                          : "bg-blue-600 text-white hover:bg-blue-500"
+                      }`}
+                    >
+                      {gitVerified === "VERIFYING" ? "Đang check..." : gitVerified === "VERIFIED" ? "Đã check" : "Kiểm tra"}
+                    </button>
+                  )}
+                </div>
+
+                {/* Hiển thị thông báo trạng thái check */}
+                {form.gitUrl.trim() !== "" && (
+                  <div className="mt-1.5 flex items-start gap-1.5">
+                    {gitVerified === "VERIFIED" && (
+                      <span className="text-xs text-green-500 dark:text-green-400 font-medium">
+                        ✓ {gitVerifyError || "Đường dẫn Git hợp lệ."}
+                      </span>
+                    )}
+                    {gitVerified === "FAILED" && (
+                      <span className="text-xs text-red-500 dark:text-red-400 font-medium">
+                        ✗ {gitVerifyError || "Đường dẫn Git không hợp lệ."}
+                      </span>
+                    )}
+                    {gitVerified === "UNVERIFIED" && (
+                      <span className="text-xs text-amber-500 dark:text-amber-400 font-medium">
+                        ⚠️ Nhấn nút "Kiểm tra" để xác thực đường dẫn Git.
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Mô hình SDLC */}
