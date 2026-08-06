@@ -2,40 +2,51 @@
  * Gemini AI Service — tối ưu token tối đa
  *
  * Chiến lược tiết kiệm token:
- * - Dùng model gemini-2.0-flash (rẻ + nhanh nhất)
+ * - Dùng model gemini-2.5-flash (rẻ + nhanh nhất)
  * - Giới hạn lịch sử chat: chỉ giữ 4 tin nhắn gần nhất
  * - maxOutputTokens: 400 (đủ để trả lời ngắn gọn)
  * - System prompt cực ngắn
  * - Không gửi metadata thừa
  */
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-const GEMINI_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`;
+// Hỗ trợ cả danh sách VITE_GEMINI_API_KEYS hoặc key đơn lẻ VITE_GEMINI_API_KEY
+const apiKeysStr = import.meta.env.VITE_GEMINI_API_KEYS || import.meta.env.VITE_GEMINI_API_KEY || "";
+const GEMINI_API_KEYS = apiKeysStr
+  .split(",")
+  .map(k => k.trim())
+  .filter(Boolean);
+
+let currentKeyIndex = 0;
 
 /** Số tin nhắn lịch sử tối đa gửi kèm (tiết kiệm token) */
 const MAX_HISTORY = 4;
 
-/** System prompt ngắn gọn — càng ngắn càng ít token */
-const SYSTEM_PROMPT = `Bạn là trợ lý AI của hệ thống quản lý dự án phần mềm. 
-Trả lời ngắn gọn, thực tế, tập trung vào quản lý task, tiến độ, phân công công việc.
-Không lan man. Tối đa 3-4 câu mỗi câu trả lời.`;
+/** System prompt bảo mật và định hướng bối cảnh dự án */
+const SYSTEM_PROMPT = `Bạn là trợ lý AI chuyên nghiệp thuộc dự án hiện tại của người dùng.
+NHIỆM VỤ CỦA BẠN:
+1. Chỉ hỗ trợ, trả lời và đưa ra lời khuyên về dự án hiện tại dựa trên bối cảnh dự án được cung cấp (tên dự án, thành viên, tasks, git commits).
+2. Tuyệt đối không trả lời về các dự án khác hoặc thông tin ngoài dự án này. Nếu được hỏi ngoài bối cảnh dự án hiện tại, hãy từ chối một cách lịch sự nhưng kiên quyết (ví dụ: "Tôi là trợ lý chuyên trách của dự án này và không thể hỗ trợ các thông tin ngoài phạm vi dự án hiện tại.").
+3. Phân tích lỗi (failed test từ git), gợi ý sửa code, phân chia công việc hoặc tư vấn tiến độ dựa trên dữ liệu thật của dự án. Trả lời rõ ràng, dễ hiểu, chuyên nghiệp và có chiều sâu.
+4. Khi người dùng đính kèm mã nguồn từ Git vào bối cảnh dự án, bạn có nhiệm vụ đọc kỹ, giải thích logic dòng code, tìm lỗi sai hoặc hướng dẫn cải tiến cụ thể khi được yêu cầu.`;
 
 /**
- * Gọi Gemini với lịch sử chat.
+ * Gọi Gemini với lịch sử chat và tự động xoay vòng API Keys nếu gặp lỗi.
  *
  * @param {string} userMessage - Tin nhắn người dùng vừa gửi
  * @param {Array<{role: string, text: string}>} history - Lịch sử hội thoại
- * @param {Object} context - Dữ liệu dự án (tasks, team) để AI hiểu ngữ cảnh
+ * @param {Object} context - Dữ liệu dự án (tasks, team, projectDetailedContext) để AI hiểu ngữ cảnh
  * @returns {Promise<string>} Câu trả lời từ Gemini
  */
 export async function askGemini(userMessage, history = [], context = {}) {
-  if (!GEMINI_API_KEY) {
+  if (GEMINI_API_KEYS.length === 0) {
     return "⚠️ Chưa cấu hình Gemini API key. Vui lòng kiểm tra file .env.local";
   }
 
-  // Xây dựng context ngắn gọn từ dữ liệu dự án
+  // Xây dựng bối cảnh dự án từ dữ liệu nhận được
   let contextStr = "";
-  if (context.tasks?.length > 0 || context.team?.length > 0) {
+  if (context.projectDetailedContext) {
+    contextStr = `\n\n[Bối cảnh chi tiết của dự án hiện tại]:\n${context.projectDetailedContext}`;
+  } else if (context.tasks?.length > 0 || context.team?.length > 0) {
     const doneTasks  = context.tasks?.filter(t => t.status === "done").length ?? 0;
     const totalTasks = context.tasks?.length ?? 0;
     const overdue    = context.tasks?.filter(t => {
@@ -61,55 +72,72 @@ export async function askGemini(userMessage, history = [], context = {}) {
     parts: [{ text: userMessage + contextStr }],
   });
 
-  try {
-    const res = await fetch(GEMINI_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        system_instruction: {
-          parts: [{ text: SYSTEM_PROMPT }],
+  // Duyệt qua danh sách keys từ vị trí currentKeyIndex
+  for (let attempt = 0; attempt < GEMINI_API_KEYS.length; attempt++) {
+    const activeIndex = (currentKeyIndex + attempt) % GEMINI_API_KEYS.length;
+    const apiKey = GEMINI_API_KEYS[activeIndex];
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent`;
+
+    try {
+      const res = await fetch(geminiUrl, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "x-goog-api-key": apiKey
         },
-        contents,
-        generationConfig: {
-          maxOutputTokens: 400,   // Giới hạn output token
-          temperature: 0.7,
-          topP: 0.9,
-          // Không cần candidateCount > 1
-        },
-        safetySettings: [
-          { category: "HARM_CATEGORY_HARASSMENT",        threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_HATE_SPEECH",       threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
-          { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
-        ],
-      }),
-    });
+        body: JSON.stringify({
+          system_instruction: {
+            parts: [{ text: SYSTEM_PROMPT }],
+          },
+          contents,
+          generationConfig: {
+            maxOutputTokens: 1500,   // Giới hạn output token dài hơn để giải thích code
+            temperature: 0.7,
+            topP: 0.9,
+          },
+          safetySettings: [
+            { category: "HARM_CATEGORY_HARASSMENT",        threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_HATE_SPEECH",       threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold: "BLOCK_NONE" },
+            { category: "HARM_CATEGORY_DANGEROUS_CONTENT", threshold: "BLOCK_NONE" },
+          ],
+        }),
+      });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      const msg = err?.error?.message || res.statusText;
-      // Hết quota free tier
-      if (res.status === 429) {
-        const retryAfter = err?.error?.details?.find(d => d?.retryDelay)?.retryDelay || "";
-        return `⏳ Gemini API đã vượt giới hạn quota miễn phí (429).\n\nCách khắc phục:\n1. Lấy API key mới tại https://aistudio.google.com/apikey\n2. Cập nhật VITE_GEMINI_API_KEY trong file .env.local\n3. Restart dev server${retryAfter ? `\n\nHoặc thử lại sau: ${retryAfter}` : ""}`;
+      if (!res.ok) {
+        // Nếu lỗi do hết quota, API key lỗi/hết hạn, hoặc server overloaded → thử key tiếp theo
+        if (res.status === 429 || res.status === 400 || res.status === 401 || res.status === 403 || res.status === 503 || res.status === 502) {
+          console.warn(`Gemini API Key thứ ${activeIndex + 1} gặp lỗi HTTP ${res.status}. Đang chuyển sang key tiếp theo...`);
+          continue;
+        }
+        
+        // Với các lỗi HTTP khác, hiển thị trực tiếp
+        const err = await res.json().catch(() => ({}));
+        return `❌ Lỗi Gemini API (${res.status}): ${err?.error?.message || res.statusText}`;
       }
-      // API key lỗi format → gợi ý
-      if (res.status === 400 || res.status === 401 || res.status === 403) {
-        return `❌ API key không hợp lệ (${res.status}). Vui lòng lấy key mới tại https://aistudio.google.com/apikey`;
+
+      // Lưu lại key index hoạt động tốt nhất cho lần sau
+      currentKeyIndex = activeIndex;
+
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+      if (!text) return "❌ Gemini không trả về nội dung. Thử lại nhé.";
+      return text.trim();
+
+    } catch (err) {
+      if (err.name === "TypeError") {
+        // Lỗi kết nối mạng chung, thử lại với key sau hoặc báo lỗi nếu là key cuối
+        if (attempt === GEMINI_API_KEYS.length - 1) {
+          return "❌ Không thể kết nối tới Gemini API. Kiểm tra internet hoặc CORS.";
+        }
+      } else {
+        if (attempt === GEMINI_API_KEYS.length - 1) {
+          return `❌ Lỗi: ${err.message}`;
+        }
       }
-      return `❌ Lỗi Gemini API (${res.status}): ${msg}`;
     }
-
-    const data = await res.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!text) return "❌ Gemini không trả về nội dung. Thử lại nhé.";
-    return text.trim();
-
-  } catch (err) {
-    if (err.name === "TypeError") {
-      return "❌ Không thể kết nối tới Gemini API. Kiểm tra internet hoặc CORS.";
-    }
-    return `❌ Lỗi: ${err.message}`;
   }
+
+  return "⏳ Tất cả API keys trong danh sách đều đã vượt quá giới hạn quota hoặc không hợp lệ. Vui lòng bổ sung thêm key hoạt động trong file .env.local!";
 }
