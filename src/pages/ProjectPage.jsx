@@ -818,10 +818,10 @@ export default function ProjectPage() {
   );
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#070a12] text-gray-900 dark:text-white p-6">
+    <div className="min-h-screen bg-white dark:bg-[#070a12] text-gray-900 dark:text-white p-4 md:p-6">
 
       {/* HEADER */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dự Án</h1>
           {!loading && (
@@ -831,21 +831,21 @@ export default function ProjectPage() {
           )}
         </div>
 
-  <div className="flex gap-3">
+  <div className="flex flex-wrap gap-2">
 
     <input
       value={search}
       onChange={(e) => setSearch(e.target.value)}
       placeholder="Tìm kiếm dự án..."
-      className="bg-gray-100 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 w-52 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
+      className="bg-gray-100 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 px-3 py-2 rounded-lg text-sm outline-none focus:border-blue-500 w-full sm:w-52 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
     />
 
     <button
       onClick={() => navigate("/projects/trash")}
-      className="flex items-center gap-2 border border-red-500 text-red-500 px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white transition"
+      className="flex items-center gap-2 border border-red-500 text-red-500 px-4 py-2 rounded-lg hover:bg-red-500 hover:text-white transition text-sm"
     >
-      <FiTrash2 size={18} />
-      <span>Thùng rác</span>
+      <FiTrash2 size={16} />
+      <span className="hidden sm:inline">Thùng rác</span>
     </button>
 
     <button
@@ -855,7 +855,7 @@ export default function ProjectPage() {
       }}
       className="bg-blue-600 hover:bg-blue-500 transition px-4 py-2 rounded-lg text-sm font-semibold text-white"
     >
-      + Thêm Dự Án
+      + <span className="hidden sm:inline">Thêm </span>Dự Án
     </button>
 
   </div>

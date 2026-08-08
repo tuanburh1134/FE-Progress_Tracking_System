@@ -87,4 +87,23 @@ export const ENDPOINTS = {
     PREDICT_BATCH: '/predict/batch',
     TRAINING_STATUS: '/model/status',
   },
+  // -------------------------------------------------------------------------
+  // Invitations
+  // -------------------------------------------------------------------------
+  INVITATIONS: {
+    PENDING: '/invitations/pending',
+    ACCEPT: (id: number) => `/invitations/${id}/accept`,
+    DECLINE: (id: number) => `/invitations/${id}/decline`,
+    PROJECT_PENDING: (projectId: number) => `/projects/${projectId}/invitations/pending`,
+  },
+
+  // -------------------------------------------------------------------------
+  // Notifications
+  // -------------------------------------------------------------------------
+  NOTIFICATIONS: {
+    LIST: '/notifications',
+    UNREAD_COUNT: '/notifications/unread-count',
+    MARK_READ: (id: number) => `/notifications/${id}/read`,
+    MARK_ALL_READ: '/notifications/read-all',
+  },
 } as const
