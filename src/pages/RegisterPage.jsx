@@ -22,11 +22,19 @@ export default function RegisterPage() {
     e.preventDefault();
     setError("");
 
+    // ── Validation phía client ──────────────────────────────────────────────
     if (!fullName.trim() || !username.trim() || !email.trim() || !password.trim()) {
       setError("Vui lòng điền đầy đủ tất cả các trường.");
       return;
     }
-
+    if (username.trim().length < 3 || username.trim().length > 50) {
+      setError("Tên đăng nhập phải từ 3 đến 50 ký tự.");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]+$/.test(username.trim())) {
+      setError("Tên đăng nhập chỉ được chứa chữ không dấu (a-z, A-Z), số (0-9) và dấu gạch dưới (_). Không được dùng khoảng trắng hoặc ký tự tiếng Việt.");
+      return;
+    }
     if (password.length < 6) {
       setError("Mật khẩu phải có ít nhất 6 ký tự.");
       return;
@@ -50,10 +58,27 @@ export default function RegisterPage() {
 
       navigate("/dashboard");
     } catch (err) {
-      const msg =
-        err.response?.data?.message ||
-        "Đăng ký thất bại. Email hoặc tên đăng nhập đã được sử dụng.";
-      setError(msg);
+      // Backend trả về validation errors dạng map: { field: "message" }
+      const fieldErrors = err.response?.data?.data;
+      if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
+        // Ánh xạ tên field sang tiếng Việt
+        const fieldNames = {
+          username: "Tên đăng nhập",
+          email: "Email",
+          password: "Mật khẩu",
+          fullName: "Họ và tên",
+        };
+        const errorLines = Object.entries(fieldErrors)
+          .map(([field, msg]) => `• ${fieldNames[field] || field}: ${msg}`)
+          .join("\n");
+        setError(errorLines);
+      } else {
+        // Lỗi business logic (email trùng, username đã có, v.v.)
+        const msg =
+          err.response?.data?.message ||
+          "Đăng ký thất bại. Vui lòng kiểm tra lại thông tin.";
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,7 +101,7 @@ export default function RegisterPage() {
 
         {/* Thông báo lỗi */}
         {error && (
-          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+          <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm whitespace-pre-line leading-relaxed">
             {error}
           </div>
         )}
@@ -106,9 +131,12 @@ export default function RegisterPage() {
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Nhập tên đăng nhập..."
+              placeholder="VD: nguyen_van_a123"
               className="w-full mt-1 p-3 rounded-lg bg-gray-100 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 outline-none text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400"
             />
+            <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+              Chỉ dùng chữ không dấu, số và dấu _ (không khoảng trắng, không tiếng Việt)
+            </p>
           </div>
 
           {/* Email */}

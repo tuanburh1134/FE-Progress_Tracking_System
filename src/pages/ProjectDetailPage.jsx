@@ -24,6 +24,33 @@ const isOverdue = (task) => {
   return task.deadline <= today;
 };
 
+const isCompletedOnTime = (task) => {
+  if (task.status !== "done") return false;
+  if (!task.deadline) return true;
+  const compDate = task.completedAt || task.deadline;
+  return compDate <= task.deadline;
+};
+
+const isTaskOverdue = (task) => {
+  const today = new Date().toISOString().split("T")[0];
+  if (task.status === "done") {
+    if (!task.deadline || !task.completedAt) return false;
+    return task.completedAt > task.deadline;
+  }
+  if (!task.deadline) return false;
+  return task.deadline < today;
+};
+
+const getRemainingDays = (deadline) => {
+  if (!deadline) return Infinity;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const dl = new Date(deadline);
+  dl.setHours(0, 0, 0, 0);
+  const diffTime = dl.getTime() - today.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
 /* ═══════════════════════════════════════
    CHATBOT WIDGET (góc phải màn hình)
 ═══════════════════════════════════════ */
@@ -126,21 +153,71 @@ function ChatbotWidget({ open, onClose, initialQuestion }) {
   );
 }
 
+const isSameMember = (m1, m2) => {
+  if (!m1 || !m2) return false;
+  if (m1.id && m2.id && String(m1.id) === String(m2.id)) return true;
+  if (m1.email && m2.email && String(m1.email).toLowerCase() === String(m2.email).toLowerCase()) return true;
+  if (m1.username && m2.username && String(m1.username).toLowerCase() === String(m2.username).toLowerCase()) return true;
+  if (m1.githubUsername && m2.githubUsername && String(m1.githubUsername).toLowerCase() === String(m2.githubUsername).toLowerCase()) return true;
+  const name1 = m1.fullName || m1.name;
+  const name2 = m2.fullName || m2.name;
+  if (name1 && name2 && String(name1).toLowerCase().trim() === String(name2).toLowerCase().trim()) return true;
+  return false;
+};
+
 /* ═══════════════════════════════════════
    TASK CARD CONTENT
 ═══════════════════════════════════════ */
-function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, dragHandleProps }) {
+function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, onAISwap, dragHandleProps }) {
   const [menu, setMenu] = useState(false);
   const [editScore, setEditScore] = useState(false);
   const [scoreInput, setScoreInput] = useState(task.score ?? "");
+  const currentUser = useAuthStore((s) => s.user);
+  
+  const menuRef = useRef(null);
 
-  const overdue = isOverdue(task);
+  useEffect(() => {
+    if (!menu) return;
+    const handleOutsideClick = (e) => {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        setMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [menu]);
 
-  const scoreColor =
-    task.score >= 8 ? "text-green-400 border-green-600" :
-    task.score >= 5 ? "text-yellow-400 border-yellow-600" :
-    task.score > 0  ? "text-red-400 border-red-600" :
-                      "text-gray-500 border-gray-700";
+  const remaining = getRemainingDays(task.deadline);
+  const isDone = task.status === "done";
+  const isOverdueTask = !isDone && task.deadline && remaining < 0;
+  const isUrgent = !isDone && task.deadline && remaining >= 0 && remaining <= 1;
+
+  // Quyết định class màu sắc động
+  let cardBgClass = "";
+  let taskNameColor = "";
+  let subtextColor = "";
+  let scoreBorderColor = "";
+
+  if (isOverdueTask) {
+    cardBgClass = "bg-black border-2 border-red-600 animate-pulse-border shadow-[0_0_12px_rgba(239,68,68,0.25)] text-red-400";
+    taskNameColor = "text-red-400";
+    subtextColor = "text-red-500/80";
+    scoreBorderColor = "text-red-400 border-red-600 bg-red-950/20";
+  } else if (isUrgent) {
+    cardBgClass = "bg-amber-50 dark:bg-amber-950/20 border-2 border-amber-400 dark:border-amber-600/50";
+    taskNameColor = "text-amber-950 dark:text-amber-100";
+    subtextColor = "text-amber-800 dark:text-amber-400/80";
+    scoreBorderColor = "text-amber-600 border-amber-400 bg-amber-500/10 dark:text-amber-400 dark:border-amber-600";
+  } else {
+    // Bình thường: xanh dương nhạt
+    cardBgClass = "bg-blue-50/75 dark:bg-slate-900/80 border border-blue-200 dark:border-slate-800/80 hover:border-blue-400 dark:hover:border-blue-700/60";
+    taskNameColor = "text-blue-950 dark:text-blue-100";
+    subtextColor = "text-blue-800/80 dark:text-blue-400/80";
+    scoreBorderColor = task.score >= 8 ? "text-green-600 border-green-300 dark:text-green-400 dark:border-green-600" :
+                       task.score >= 5 ? "text-yellow-600 border-yellow-300 dark:text-yellow-400 dark:border-yellow-600" :
+                       task.score > 0  ? "text-red-600 border-red-300 dark:text-red-400 dark:border-red-600" :
+                                         "text-gray-500 border-gray-300 dark:text-gray-400 dark:border-gray-700";
+  }
 
   const handleScoreBlur = () => {
     const v = parseInt(scoreInput);
@@ -152,48 +229,58 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
   return (
     <div
       {...dragHandleProps}
-      className={`p-3 mb-2 bg-[#0d1117] rounded-xl transition select-none cursor-grab active:cursor-grabbing
-        ${overdue
-          ? "border-2 border-red-500 animate-pulse-border shadow-[0_0_8px_rgba(239,68,68,0.4)]"
-          : "border border-gray-800 hover:border-gray-600"
-        }`}
+      className={`p-3 mb-2 rounded-xl transition select-none cursor-grab active:cursor-grabbing ${cardBgClass}`}
     >
-      {/* Cảnh báo trễ hạn */}
-      {overdue && (
+      {/* Cảnh báo trạng thái */}
+      {isOverdueTask && (
         <div className="flex items-center gap-1 mb-2 px-2 py-1 bg-red-500/15 border border-red-500/40 rounded-lg">
-          <span className="text-red-400 text-[10px] font-bold animate-pulse">⚠ Nguy cơ trễ hạn</span>
+          <span className="text-red-400 text-[10px] font-bold animate-pulse">❌ ĐÃ TRỄ HẠN</span>
+        </div>
+      )}
+
+      {isUrgent && (
+        <div className="flex items-center gap-1 mb-2 px-2 py-1 bg-amber-500/15 border border-amber-500/40 rounded-lg">
+          <span className="text-amber-600 dark:text-amber-400 text-[10px] font-bold animate-pulse">⏳ Sắp hết hạn (Còn &lt; 1 ngày)</span>
         </div>
       )}
 
       {/* Row 1: tên + menu */}
       <div className="flex justify-between items-start mb-2">
-        <p className="font-semibold text-sm leading-snug flex-1 pr-2">{task.name}</p>
+        <p className={`font-semibold text-sm leading-snug flex-1 pr-2 ${taskNameColor}`}>{task.name}</p>
 
-        <div className="relative flex-shrink-0">
+        <div className="relative flex-shrink-0" ref={menuRef}>
           <button
             onClick={(e) => { e.stopPropagation(); setMenu(!menu); }}
-            className="text-gray-500 hover:text-white px-1"
+            className="text-gray-400 hover:text-gray-700 dark:hover:text-white px-1 transition"
           >
             ⋯
           </button>
 
           {menu && (
-            <div className="absolute right-0 mt-1 bg-[#111827] border border-gray-700 text-xs rounded-xl overflow-hidden z-50 shadow-lg w-32">
+            <div className="absolute right-0 mt-1 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700 text-xs rounded-xl overflow-hidden z-50 shadow-lg w-32">
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit?.(task); setMenu(false); }}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-800"
+                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
               >
                 Chỉnh sửa
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onOpenAI?.(task); setMenu(false); }}
-                className="block w-full text-left px-4 py-2 hover:bg-blue-800 text-blue-400"
+                className="block w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
               >
                 Nhờ AI hỗ trợ
               </button>
+              {task.status !== "done" && isSameMember(task.assignee, currentUser) && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onAISwap?.(task); setMenu(false); }}
+                  className="block w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-yellow-400 font-medium border-t border-gray-100 dark:border-gray-800"
+                >
+                  🔄 Nhờ AI đổi việc
+                </button>
+              )}
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete?.(task); setMenu(false); }}
-                className="block w-full text-left px-4 py-2 hover:bg-red-700 text-red-400"
+                className="block w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400"
               >
                 Xóa
               </button>
@@ -219,11 +306,11 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
               onBlur={handleScoreBlur}
               onKeyDown={(e) => e.key === "Enter" && handleScoreBlur()}
               onClick={(e) => e.stopPropagation()}
-              className="w-10 h-6 text-center text-xs bg-black border border-blue-500 rounded-lg outline-none text-white"
+              className="w-10 h-6 text-center text-xs bg-white dark:bg-black border border-blue-500 rounded-lg outline-none text-gray-900 dark:text-white"
             />
           ) : (
             <span
-              className={`inline-flex items-center justify-center w-10 h-6 text-xs font-bold border rounded-lg cursor-pointer ${scoreColor}`}
+              className={`inline-flex items-center justify-center w-10 h-6 text-xs font-bold border rounded-lg cursor-pointer transition ${scoreBorderColor}`}
               title="Bấm để chỉnh điểm"
             >
               {task.score != null ? task.score : "—"}
@@ -233,7 +320,7 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
 
         {/* Nhãn lỗi kiểm thử */}
         {task.bugCount > 0 && (
-          <span className="inline-flex items-center gap-1 px-2 h-6 text-[10px] font-bold border border-red-600 text-red-400 bg-red-900/20 rounded-lg flex-shrink-0">
+          <span className="inline-flex items-center gap-1 px-2 h-6 text-[10px] font-bold border border-red-600 text-red-500 dark:text-red-400 bg-red-500/10 dark:bg-red-900/20 rounded-lg flex-shrink-0">
             🐛 {task.bugCount} lỗi
           </span>
         )}
@@ -250,7 +337,7 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
                 className={`w-6 h-6 rounded-full text-[10px] flex items-center justify-center border transition
                   ${active
                     ? "bg-blue-600 border-blue-400 text-white ring-1 ring-blue-400"
-                    : "bg-gray-800 border-gray-700 text-gray-400 hover:border-gray-500"}`}
+                    : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-500"}`}
               >
                 {m.name.charAt(0)}
               </button>
@@ -262,11 +349,11 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
       {/* Row 3: tên người được giao + deadline */}
       <div className="flex items-center justify-between mt-1.5">
         {task.assignee
-          ? <p className="text-[10px] text-gray-500">Giao cho: <span className="text-gray-300">{task.assignee.name}</span></p>
+          ? <p className={`text-[10px] ${subtextColor}`}>Giao cho: <span className="font-semibold">{task.assignee.name}</span></p>
           : <span />
         }
         {task.deadline && (
-          <span className={`text-[10px] ${overdue ? "text-red-400 font-bold" : "text-gray-600"}`}>
+          <span className={`text-[10px] font-mono ${isOverdueTask ? "text-red-400 font-bold" : subtextColor}`}>
             {task.deadline}
           </span>
         )}
@@ -278,7 +365,7 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
 /* ═══════════════════════════════════════
    TASK CARD — sortable wrapper
 ═══════════════════════════════════════ */
-function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI }) {
+function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, onAISwap }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: task.id });
 
   return (
@@ -296,6 +383,7 @@ function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScor
         onChangeAssignee={onChangeAssignee}
         onChangeScore={onChangeScore}
         onOpenAI={onOpenAI}
+        onAISwap={onAISwap}
         dragHandleProps={{ ...attributes, ...listeners }}
       />
     </div>
@@ -305,7 +393,7 @@ function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScor
 /* ═══════════════════════════════════════
    COLUMN
 ═══════════════════════════════════════ */
-function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team, onEditTask, onDeleteTask, onChangeAssignee, onChangeScore, onOpenAI }) {
+function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team, onEditTask, onDeleteTask, onChangeAssignee, onChangeScore, onOpenAI, onAISwap }) {
   const { setNodeRef } = useDroppable({ id: column.id });
   const [edit, setEdit] = useState(false);
   const [title, setTitle] = useState(column.name);
@@ -317,7 +405,7 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
       ref={setNodeRef}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
-      className="w-[280px] flex-shrink-0"
+      className="w-[260px] sm:w-[280px] flex-shrink-0"
     >
       <div className="p-3 bg-gray-50 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 rounded-2xl min-h-[420px] flex flex-col">
         {/* Header */}
@@ -350,6 +438,7 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
               onChangeAssignee={onChangeAssignee}
               onChangeScore={onChangeScore}
               onOpenAI={onOpenAI}
+              onAISwap={onAISwap}
             />
           ))}
         </SortableContext>
@@ -415,9 +504,9 @@ function AIHubTab({ tasks, team, saveTasks, projectId, projectName }) {
 
   const projectDetailedContext = useMemo(() => {
     const projName = projectName || "Dự án hiện tại";
-    const teamMembersStr = team.map(m => `- ${m.name} (Vai trò: ${m.role || 'Thành viên'})`).join("\n") || "Chưa có thành viên";
+    const teamMembersStr = team.map(m => `- ${m.fullName || m.name || m.username || 'Thành viên'} (Vai trò: ${m.role || 'Thành viên'})`).join("\n") || "Chưa có thành viên";
     const tasksStr = tasks.map(t => {
-      const assigneeName = t.assignee ? t.assignee.name : "Chưa phân công";
+      const assigneeName = t.assignee ? (t.assignee.fullName || t.assignee.name || t.assignee.username || "Thành viên") : "Chưa phân công";
       return `- Tác vụ: "${t.name}" | Trạng thái: ${t.status} | Độ ưu tiên: ${t.priority || 'Medium'} | Giao cho: ${assigneeName} | Hạn chót: ${t.deadline || 'Chưa có'} | Số lỗi: ${t.bugCount || 0} | Điểm khó: ${t.score != null && t.score !== '' ? t.score : 'Chưa chấm'}`;
     }).join("\n") || "Chưa có công việc nào";
 
@@ -481,8 +570,10 @@ ${selectedGitFiles.length > 0 ? `\n[MÃ NGUỒN CÁC FILE LIÊN KẾT TỪ GIT (
     `;
   }, [projectName, tasks, team, selectedGitFiles, gitFilesContent]);
 
+  const currentUser = useAuthStore((s) => s.user);
+
   const [messages,        setMessages]        = useState(() => {
-    const saved = localStorage.getItem("ai_chat_" + projectId);
+    const saved = localStorage.getItem(`ai_chat_${projectId}_${currentUser?.id || "guest"}`);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -590,14 +681,15 @@ ${selectedGitFiles.length > 0 ? `\n[MÃ NGUỒN CÁC FILE LIÊN KẾT TỪ GIT (
 
   // Tự động cắt tỉa tin nhắn (lời chào + 10 tin nhắn gần nhất) và lưu trữ vào localStorage
   useEffect(() => {
+    const key = `ai_chat_${projectId}_${currentUser?.id || "guest"}`;
     if (messages.length > 11) {
       const greeting = messages[0];
       const recent = messages.slice(-10);
       setMessages([greeting, ...recent]);
     } else {
-      localStorage.setItem("ai_chat_" + projectId, JSON.stringify(messages));
+      localStorage.setItem(key, JSON.stringify(messages));
     }
-  }, [messages, projectId]);
+  }, [messages, projectId, currentUser]);
 
   // Đồng bộ bối cảnh hội thoại (history) gửi lên Gemini
   useEffect(() => {
@@ -1132,22 +1224,69 @@ public void process(String input) {
 /* ═══════════════════════════════════════
    REPORT TAB
 ═══════════════════════════════════════ */
-function ReportTab({ tasks, team, projectName }) {
+function ReportTab({ tasks, team, projectName, activeCommits = [] }) {
 
-  /* ── Risk Score algorithm ── */
-  const riskScore = useMemo(() => {
-    if (tasks.length === 0) return 0;
-    const overdueCount = tasks.filter(isOverdue).length;
-    const totalBugs    = tasks.reduce((s, t) => s + (t.bugCount || 0), 0);
-    const doneRatio    = tasks.filter((t) => t.status === "done").length / tasks.length;
-    const unassigned   = tasks.filter((t) => !t.assignee && t.status !== "done").length;
-    const r =
-      (overdueCount / Math.max(tasks.length, 1)) * 30 +
-      Math.min(totalBugs * 3, 25) +
-      (1 - doneRatio) * 15 +
-      (unassigned / Math.max(tasks.length, 1)) * 15;
-    return Math.min(100, Math.round(r));
-  }, [tasks]);
+  /* ── IPRI (Integrated Project Risk Index) ── */
+  const riskAnalysis = useMemo(() => {
+    if (tasks.length === 0) {
+      return { score: 0, schedule: 0, quality: 0, resource: 0, integration: 0 };
+    }
+
+    const today = new Date().toISOString().split("T")[0];
+
+    // 1. SCHEDULE RISK (35%)
+    const totalScore = tasks.reduce((sum, t) => sum + (parseInt(t.score) || 1), 0);
+    const overdueTasks = tasks.filter(t => t.status !== "done" && t.deadline && t.deadline < today);
+    const overdueScore = overdueTasks.reduce((sum, t) => sum + (parseInt(t.score) || 1), 0);
+    const scheduleRisk = Math.round((overdueScore / totalScore) * 100);
+
+    // 2. QUALITY RISK (30%)
+    const activeTasks = tasks.filter(t => t.status !== "done");
+    const totalBugs = tasks.reduce((sum, t) => sum + (t.bugCount || 0), 0);
+    const qualityRisk = activeTasks.length > 0 
+      ? Math.min(100, Math.round((totalBugs / activeTasks.length) * 20))
+      : 0;
+
+    // 3. RESOURCE RISK (20%)
+    const unassignedTasks = tasks.filter(t => !t.assignee && t.status !== "done");
+    const unassignedRatio = unassignedTasks.length / tasks.length;
+    
+    // Tính imbalance (phân bổ bất đối xứng)
+    let maxWorkloadRatio = 0;
+    if (team.length > 0) {
+      const memberScores = team.map(m => {
+        const myTasks = tasks.filter(t => t.assignee?.id === m.id && t.status !== "done");
+        return myTasks.reduce((sum, t) => sum + (parseInt(t.score) || 1), 0);
+      });
+      const maxScore = Math.max(...memberScores);
+      maxWorkloadRatio = totalScore > 0 ? maxScore / totalScore : 0;
+    }
+    const imbalanceFactor = maxWorkloadRatio > 0.5 ? 1 : 0; // quá tải nếu gánh > 50% tổng điểm
+    const resourceRisk = Math.round((unassignedRatio * 60) + (imbalanceFactor * 40));
+
+    // 4. INTEGRATION RISK (15%)
+    const totalBuilds = activeCommits.length;
+    const failedBuilds = activeCommits.filter(c => c.status === "failed").length;
+    const integrationRisk = totalBuilds > 0 ? Math.round((failedBuilds / totalBuilds) * 100) : 0;
+
+    // Tổng hợp chỉ số rủi ro
+    const finalScore = Math.round(
+      (0.35 * scheduleRisk) + 
+      (0.30 * qualityRisk) + 
+      (0.20 * resourceRisk) + 
+      (0.15 * integrationRisk)
+    );
+
+    return {
+      score: Math.min(100, Math.max(0, finalScore)),
+      schedule: scheduleRisk,
+      quality: qualityRisk,
+      resource: resourceRisk,
+      integration: integrationRisk
+    };
+  }, [tasks, team, activeCommits]);
+
+  const riskScore = riskAnalysis.score;
 
   const riskColor =
     riskScore < 30 ? { bar: "#22c55e", text: "text-green-600 dark:text-green-400", label: "An toàn",           bg: "bg-green-500" } :
@@ -1164,14 +1303,15 @@ function ReportTab({ tasks, team, projectName }) {
 
   /* ── Biểu đồ 2: Hiệu suất thành viên ── */
   const memberPerfData = useMemo(() => team.map((m) => {
+    const memberName = m.fullName || m.name || m.username || "Thành viên";
     const myTasks   = tasks.filter((t) => t.assignee?.id === m.id);
     const done      = myTasks.filter((t) => t.status === "done").length;
     const totalBugs = myTasks.reduce((s, t) => s + (t.bugCount || 0), 0);
     const commits   = Math.max(1, done * 3 + myTasks.length * 2);
     const failRate  = myTasks.length > 0 ? Math.round((totalBugs / Math.max(myTasks.length * 2, 1)) * 100) : 0;
     return {
-      name:     m.name.length > 9 ? m.name.slice(0, 9) + "…" : m.name,
-      fullName: m.name,
+      name:     memberName.length > 9 ? memberName.slice(0, 9) + "…" : memberName,
+      fullName: memberName,
       commits,
       pass: 100 - Math.min(failRate, 100),
       fail: Math.min(failRate, 100),
@@ -1304,6 +1444,25 @@ function ReportTab({ tasks, team, projectName }) {
             <div key={p.label} className={`flex items-center gap-2 px-3 py-1.5 border rounded-xl text-xs ${p.color}`}>
               <span className="font-bold text-sm">{p.val}</span>
               <span className="opacity-80 dark:opacity-70">{p.label}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* Hàng 4 cột rủi ro cấu thành */}
+        <div className="grid grid-cols-4 gap-4 mt-6 pt-6 border-t border-gray-100 dark:border-gray-800/80">
+          {[
+            { name: "Tiến độ (Weight 35%)", val: riskAnalysis.schedule, color: "text-blue-500", desc: "Dựa trên điểm task quá hạn" },
+            { name: "Chất lượng (Weight 30%)", val: riskAnalysis.quality, color: "text-red-500", desc: "Dựa trên mật độ lỗi/bugs" },
+            { name: "Nhân lực (Weight 20%)", val: riskAnalysis.resource, color: "text-amber-500", desc: "Dựa trên cân bằng tải và task trống" },
+            { name: "CI/CD Tích hợp (Weight 15%)", val: riskAnalysis.integration, color: "text-indigo-500", desc: "Dựa trên tỷ lệ build fail" },
+          ].map((item) => (
+            <div key={item.name} className="p-3 bg-gray-50 dark:bg-black/30 border border-gray-100 dark:border-gray-800/40 rounded-2xl flex flex-col justify-between">
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 font-semibold">{item.name}</p>
+              <div className="flex items-baseline gap-1 mt-2">
+                <span className={`text-xl font-black ${item.color}`}>{item.val}%</span>
+                <span className="text-[9px] text-gray-400">rủi ro</span>
+              </div>
+              <p className="text-[9px] text-gray-400 dark:text-gray-500 mt-1 leading-snug">{item.desc}</p>
             </div>
           ))}
         </div>
@@ -1445,185 +1604,311 @@ function ReportTab({ tasks, team, projectName }) {
    CI/CD TAB
 ═══════════════════════════════════════ */
 
-function CICDTab({ tasks, team, projectId }) {
-  const gitUrl = useMemo(() => {
-    return localStorage.getItem("project_git_" + projectId) || "";
-  }, [projectId]);
+function CICDTab({ 
+  tasks, 
+  team, 
+  projectId, 
+  activeCommits = [], 
+  githubLoading = false, 
+  githubError = "", 
+  gitUrl = "", 
+  githubCommits = [], 
+  commitHistory = [] 
+}) {
+  const [selectedCommit, setSelectedCommit] = useState(null);
+  const [commitDiffLoading, setCommitDiffLoading] = useState(false);
+  const [commitDiff, setCommitDiff] = useState(null);
+  const [aiReviewing, setAiReviewing] = useState(false);
+  const [aiReviewResult, setAiReviewResult] = useState(null);
 
-  const [githubCommits, setGithubCommits] = useState([]);
-  const [githubLoading, setGithubLoading] = useState(false);
-  const [githubError, setGithubError] = useState("");
+  const generateMockDiff = (message) => {
+    const msg = (message || "").toLowerCase();
+    
+    if (msg.includes("đăng nhập") || msg.includes("login") || msg.includes("auth")) {
+      return [
+        {
+          filename: "src/main/java/com/projecttracker/controller/AuthController.java",
+          status: "modified",
+          additions: 15,
+          deletions: 2,
+          patch: `@@ -22,7 +22,18 @@
+ @RestController
+ @RequestMapping("/api/auth")
+ public class AuthController {
+-    // Todo: implement login endpoint
++
++    @PostMapping("/login")
++    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
++        Authentication authentication = authenticationManager.authenticate(
++            new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
++        );
++        SecurityContextHolder.getContext().setAuthentication(authentication);
++        String jwt = tokenProvider.generateToken(authentication);
++        return ResponseEntity.ok(new JwtAuthenticationResponse(jwt));
++    }
++
+     @PostMapping("/register")
+     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {`
+        }
+      ];
+    }
+    
+    if (msg.includes("trang chủ") || msg.includes("home") || msg.includes("landing")) {
+      return [
+        {
+          filename: "Frontend/src/pages/HomePage.jsx",
+          status: "modified",
+          additions: 12,
+          deletions: 1,
+          patch: `@@ -1,6 +1,17 @@
+ import React from "react";
++import HeroSection from "../components/HeroSection";
++import StatsDashboard from "../components/StatsDashboard";
+ 
+ export default function HomePage() {
+-  return <div>Welcome</div>;
++  return (
++    <div className="min-h-screen bg-slate-900 text-white">
++      <HeroSection 
++        title="Quản Lý Công Việc Đột Phá Với AI" 
++        subtitle="Tự động hóa luồng làm việc Kanban và phân tích GitHub"
++      />
++      <StatsDashboard />
++    </div>
++  );
+ }`
+        }
+      ];
+    }
 
-  useEffect(() => {
-    const githubInfo = parseGithubUrl(gitUrl);
-    if (!githubInfo) {
-      setGithubCommits([]);
-      setGithubError("");
+    if (msg.includes("giao diện") || msg.includes("css") || msg.includes("style") || msg.includes("màu")) {
+      return [
+        {
+          filename: "Frontend/src/index.css",
+          status: "modified",
+          additions: 8,
+          deletions: 0,
+          patch: `@@ -74,4 +74,12 @@
++@keyframes bounceShort {
++  0%, 100% { transform: translateY(0); }
++  50% { transform: translateY(-4px); }
++}
++.animate-bounce-short {
++  animation: bounceShort 0.8s ease-in-out 3;
++}`
+        }
+      ];
+    }
+
+    // Default fallback
+    return [
+      {
+        filename: "src/main/java/com/projecttracker/service/TaskService.java",
+        status: "modified",
+        additions: 5,
+        deletions: 1,
+        patch: `@@ -45,4 +45,8 @@
+     public Task updateTaskStatus(String taskId, String status) {
+         Task task = taskRepository.findById(taskId).orElseThrow();
+-        task.setStatus(status);
++        task.setStatus(status);
++        if ("done".equals(status)) {
++            task.setCompletedAt(LocalDate.now());
++        }
+         return taskRepository.save(task);
+     }`
+      }
+    ];
+  };
+
+  const fetchCommitDiff = async (commit) => {
+    setSelectedCommit(commit);
+    setCommitDiffLoading(true);
+    setCommitDiff(null);
+    setAiReviewResult(null);
+
+    let fetched = false;
+    if (gitUrl && gitUrl.includes("github.com") && commit.sha) {
+      try {
+        const cleanUrl = gitUrl.replace(/\.git$/, "");
+        const parts = cleanUrl.split("github.com/");
+        if (parts.length > 1) {
+          const pathParts = parts[1].split("/");
+          if (pathParts.length >= 2) {
+            const owner = pathParts[0];
+            const repo = pathParts[1];
+            const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/commits/${commit.sha}`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.files && data.files.length > 0) {
+                const filesDiff = data.files.map(f => ({
+                  filename: f.filename,
+                  status: f.status,
+                  additions: f.additions,
+                  deletions: f.deletions,
+                  patch: f.patch || "@@ -0,0 +1,0 @@\n+ File binary hoặc thay đổi không hiển thị được văn bản."
+                }));
+                setCommitDiff(filesDiff);
+                fetched = true;
+              }
+            }
+          }
+        }
+      } catch (err) {
+        console.warn("Lỗi fetch GitHub commit diff:", err);
+      }
+    }
+
+    if (!fetched) {
+      setTimeout(() => {
+        setCommitDiff(generateMockDiff(commit.message));
+        setCommitDiffLoading(false);
+      }, 500);
       return;
     }
+    setCommitDiffLoading(false);
+  };
 
-    const fetchGithubData = async () => {
-      setGithubLoading(true);
-      setGithubError("");
-      try {
-        const { owner, repo } = githubInfo;
+  const handleAIReview = async () => {
+    if (!selectedCommit || !commitDiff) return;
+    setAiReviewing(true);
+    setAiReviewResult(null);
 
-        // Tải song song commits và workflow runs
-        const [commitsRes, runsRes] = await Promise.all([
-          fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=10`),
-          fetch(`https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=20`).catch(() => null)
-        ]);
+    const diffContent = commitDiff.map(f => `File: ${f.filename}\n${f.patch}`).join("\n\n");
+    const taskName = selectedCommit.relatedTask?.name || "Không rõ";
+    const commitMsg = selectedCommit.message;
+    const deadline = selectedCommit.relatedTask?.deadline || "Không có";
+    const commitTime = selectedCommit.time;
 
-        if (!commitsRes.ok) {
-          throw new Error(`GitHub API returned status ${commitsRes.status}`);
-        }
+    const userPrompt = `Đánh giá code thay đổi trong commit sau đây:
+Commit Message: "${commitMsg}"
+Task Liên Quan: "${taskName}"
+Thời gian đẩy code: "${commitTime}" (Hạn hoàn thành task - Deadline: "${deadline}")
 
-        const rawCommits = await commitsRes.json();
-        
-        let workflowRuns = [];
-        if (runsRes && runsRes.ok) {
-          try {
-            const runsData = await runsRes.json();
-            workflowRuns = runsData.workflow_runs || [];
-          } catch (e) {
-            console.warn("Lỗi parse JSON actions runs:", e);
+Nội dung code diff:
+\`\`\`diff
+${diffContent}
+\`\`\`
+
+Hãy phân tích và chấm điểm mã nguồn này theo đúng 3 tiêu chí:
+1. Độ liên quan (Relevance): Code này có đúng với chức năng của task được giao không? Có dư thừa hay bị lệch hướng không?
+2. Độ ổn định (Stability): Cấu trúc code có gọn gàng, mạch lạc, dễ đọc, dễ bảo trì không? Có dư thừa dòng không cần thiết không?
+3. Mức độ rủi ro (Risk): Có rủi ro về mặt kỹ thuật hoặc thời gian không (đặc biệt nếu đẩy sát giờ/trễ hạn deadline)?
+
+Hãy trả về kết quả chính xác theo định dạng sau (đảm bảo mỗi tiêu chí nằm trên một dòng riêng biệt bắt đầu đúng với tên tiêu chí và ngăn cách phần đánh giá/nhận xét bằng ký tự "|"):
+Độ liên quan: [Thấp/Trung bình/Cao] | [Nhận xét chi tiết của bạn]
+Độ ổn định: [Thấp/Trung bình/Cao] | [Nhận xét chi tiết của bạn]
+Mức độ rủi ro: [Thấp/Trung bình/Cao] | [Nhận xét chi tiết của bạn]`;
+
+    try {
+      const { askGemini } = await import("../services/geminiService");
+      const resText = await askGemini(userPrompt, [], {
+        tasks,
+        team,
+        projectDetailedContext: `Dự án hiện tại có các thành viên và công việc đang theo dõi trên bảng Kanban.`
+      });
+
+      if (resText && !resText.includes("⚠️") && !resText.includes("❌")) {
+        const lines = resText.split("\n");
+        let parsed = { relevance: null, stability: null, risk: null };
+
+        lines.forEach(line => {
+          if (line.includes("Độ liên quan:")) {
+            const parts = line.split("Độ liên quan:")[1].split("|");
+            parsed.relevance = {
+              level: parts[0]?.trim() || "Trung bình",
+              comment: parts[1]?.trim() || "Chưa có nhận xét."
+            };
           }
-        }
-
-        // Map GitHub commits sang schema của ứng dụng
-        const mappedCommits = rawCommits.map((c, idx) => {
-          // Tìm workflow run trùng với commit SHA
-          const matchRun = workflowRuns.find((r) => r.head_sha === c.sha);
-          
-          let status = "success";
-          if (matchRun) {
-            if (matchRun.status === "completed") {
-              status = matchRun.conclusion === "success" ? "success" : "failed";
-            } else {
-              status = "running";
-            }
-          } else {
-            // Default xen kẽ cho UI đa dạng nếu không có runs
-            status = idx === 1 ? "failed" : idx === 0 ? "running" : "success";
+          if (line.includes("Độ ổn định:")) {
+            const parts = line.split("Độ ổn định:")[1].split("|");
+            parsed.stability = {
+              level: parts[0]?.trim() || "Trung bình",
+              comment: parts[1]?.trim() || "Chưa có nhận xét."
+            };
           }
-
-          const passTests = status === "success" ? Math.floor(Math.random() * 20) + 15 : status === "running" ? 8 : 4;
-          const failTests = status === "failed" ? Math.floor(Math.random() * 4) + 1 : 0;
-
-          return {
-            id: c.sha,
-            author: c.commit.author?.name || c.author?.login || "Unknown",
-            authorInit: (c.commit.author?.name || c.author?.login || "U").charAt(0).toUpperCase(),
-            message: c.commit.message.split("\n")[0],
-            branch: matchRun ? matchRun.head_branch : "main",
-            status,
-            passTests,
-            failTests,
-            totalTests: passTests + failTests,
-            sha: c.sha.slice(0, 7),
-            time: new Date(c.commit.author?.date || Date.now()).toLocaleString("vi-VN", {
-              hour: "2-digit",
-              minute: "2-digit",
-              day: "2-digit",
-              month: "2-digit",
-            }),
-            relatedTask: null,
-          };
+          if (line.includes("Mức độ rủi ro:")) {
+            const parts = line.split("Mức độ rủi ro:")[1].split("|");
+            parsed.risk = {
+              level: parts[0]?.trim() || "Trung bình",
+              comment: parts[1]?.trim() || "Chưa có nhận xét."
+            };
+          }
         });
 
-        setGithubCommits(mappedCommits);
-      } catch (err) {
-        console.warn("Lỗi tải GitHub commits. Sử dụng fallback giả lập.", err);
-        setGithubError("Không thể kết nối đến GitHub API (kho riêng tư hoặc hết hạn mức). Đang hiển thị dữ liệu giả lập.");
-        setGithubCommits([]);
-      } finally {
-        setGithubLoading(false);
+        if (parsed.relevance && parsed.stability && parsed.risk) {
+          setAiReviewResult(parsed);
+          setAiReviewing(false);
+          return;
+        }
       }
-    };
-
-    fetchGithubData();
-  }, [gitUrl]);
-
-  /* Tạo lịch sử commit giả lập có gắn với task thật */
-  const commitHistory = useMemo(() => {
-    const statuses = ["success", "success", "success", "failed", "running"];
-    const msgs = [
-      "feat: thêm chức năng xác thực người dùng",
-      "fix: sửa lỗi validate form đăng nhập",
-      "refactor: tách logic service layer",
-      "feat: tích hợp JWT authentication",
-      "fix: xử lý exception NullPointerException",
-      "test: thêm unit test cho UserService",
-      "feat: hoàn thiện API quản lý dự án",
-      "fix: sửa lỗi ngày tháng không đúng định dạng",
-      "chore: cập nhật dependencies",
-      "feat: thêm drag-drop cho Kanban board",
-    ];
-    const branches = ["main", "develop", "feature/auth", "feature/kanban", "hotfix/login"];
-
-    const rows = [];
-    const now = Date.now();
-
-    team.forEach((m, mi) => {
-      const myTasks = tasks.filter((t) => t.assignee?.id === m.id);
-      const count = Math.max(2, myTasks.length + 1);
-      for (let i = 0; i < count; i++) {
-        const relatedTask = myTasks[i % Math.max(myTasks.length, 1)];
-        const bugCount = relatedTask?.bugCount || 0;
-        const status = bugCount > 0 && i === 0
-          ? "failed"
-          : statuses[(mi * 3 + i) % statuses.length];
-        const passTests = status === "success" ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 5);
-        const failTests = status === "failed" ? bugCount || (Math.floor(Math.random() * 5) + 1) : 0;
-        rows.push({
-          id: `${m.id}-${i}`,
-          author: m.name,
-          authorInit: m.name.charAt(0),
-          message: relatedTask ? `feat: ${relatedTask.name.slice(0, 40)}` : msgs[(mi * 2 + i) % msgs.length],
-          branch: branches[(mi + i) % branches.length],
-          status,
-          passTests,
-          failTests,
-          totalTests: passTests + failTests,
-          sha: Math.random().toString(16).slice(2, 9),
-          time: new Date(now - (mi * count + i) * 1000 * 60 * 37).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }),
-          relatedTask,
-        });
-      }
-    });
-
-    // Thêm vài commit không gắn task nếu không có team
-    if (team.length === 0) {
-      for (let i = 0; i < 5; i++) {
-        rows.push({
-          id: `demo-${i}`,
-          author: "Demo User",
-          authorInit: "D",
-          message: msgs[i],
-          branch: branches[i % branches.length],
-          status: statuses[i % statuses.length],
-          passTests: 12,
-          failTests: i === 1 ? 3 : 0,
-          totalTests: i === 1 ? 15 : 12,
-          sha: Math.random().toString(16).slice(2, 9),
-          time: new Date(Date.now() - i * 1000 * 60 * 45).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }),
-          relatedTask: null,
-        });
-      }
+    } catch (err) {
+      console.warn("Lỗi gọi Gemini AI, đang sử dụng thuật toán phân tích quy tắc dự phòng:", err);
     }
 
-    return rows.sort((a, b) => b.id.localeCompare(a.id));
-  }, [tasks, team]);
+    setTimeout(() => {
+      const isDone = selectedCommit.status === "success";
+      let relLevel = "Trung bình";
+      let relComment = "";
+      const cleanedMsg = commitMsg.toLowerCase();
+      const cleanedTask = taskName.toLowerCase();
+      
+      if (taskName === "Không rõ") {
+        relLevel = "Trung bình";
+        relComment = "Commit này không gắn kết trực tiếp với task nào trên bảng Kanban, gây khó khăn cho việc đối chiếu nghiệp vụ.";
+      } else if (cleanedMsg.includes(cleanedTask) || cleanedTask.includes(cleanedMsg) || 
+                 (cleanedMsg.includes("login") && cleanedTask.includes("đăng nhập")) ||
+                 (cleanedMsg.includes("home") && cleanedTask.includes("trang chủ"))) {
+        relLevel = "Cao";
+        relComment = `Code thay đổi tập trung giải quyết chính xác tính năng "${taskName}". Logic viết gọn gàng, không phát hiện mã nguồn thừa ngoài phạm vi.`;
+      } else {
+        relLevel = "Thấp";
+        relComment = `Tên commit "${commitMsg}" và code thay đổi có sự sai lệch nhất định so với mô tả task được giao "${taskName}". Trưởng nhóm nên xác nhận lại phạm vi code.`;
+      }
+
+      let stabLevel = "Cao";
+      let stabComment = "Cấu trúc mã nguồn viết rất tường minh, khai báo biến sạch sẽ, sử dụng các framework helper chuẩn và không lạm dụng dòng code thừa.";
+      
+      const totalAdditions = commitDiff.reduce((sum, f) => sum + f.additions, 0);
+      if (totalAdditions > 30) {
+        stabLevel = "Trung bình";
+        stabComment = "Phát hiện mã nguồn thay đổi tương đối dài. Nên xem xét tách bớt các phương thức hoặc cấu trúc helper để nâng cao tính tái sử dụng.";
+      } else if (totalAdditions > 80) {
+        stabLevel = "Thấp";
+        stabComment = "Mã nguồn quá phức tạp và dài dòng trong một commit đơn lẻ. Tiềm ẩn nguy cơ rối loạn logic điều khiển và khó bảo trì lâu dài.";
+      }
+
+      let riskLevel = "Thấp";
+      let riskComment = "Commit được đẩy lên sớm so với deadline đề ra. Các test cases tích hợp CI/CD đều vượt qua ổn định.";
+
+      if (!isDone) {
+        riskLevel = "Cao";
+        riskComment = "Pipeline build CI/CD của commit này bị THẤT BẠI! Cần kiểm tra ngay log biên dịch để khắc phục lỗi cú pháp hoặc logic.";
+      } else if (deadline !== "Không có") {
+        const todayStr = new Date().toISOString().split("T")[0];
+        if (todayStr > deadline) {
+          riskLevel = "Cao";
+          riskComment = `Tiến trình push code trễ so với hạn hoàn thành (Deadline: ${deadline}). Cần đẩy nhanh tiến độ review để tránh trễ hạn dây chuyền.`;
+        } else if (todayStr === deadline) {
+          riskLevel = "Trung bình";
+          riskComment = "Code được đẩy sát giờ chót deadline. Áp lực thời gian có thể bỏ sót lỗi kiểm thử, khuyến nghị kiểm thử hộp đen kỹ càng.";
+        }
+      }
+
+      setAiReviewResult({
+        relevance: { level: relLevel, comment: relComment },
+        stability: { level: stabLevel, comment: stabComment },
+        risk: { level: riskLevel, comment: riskComment }
+      });
+      setAiReviewing(false);
+    }, 1200);
+  };
 
   const statusConfig = {
     success: { dot: "bg-green-500", text: "text-green-400", border: "border-green-800/40", bg: "bg-green-900/10", label: "Thành công", icon: "✓" },
     failed:  { dot: "bg-red-500",   text: "text-red-400",   border: "border-red-800/40",   bg: "bg-red-900/10",   label: "Thất bại",   icon: "✗" },
     running: { dot: "bg-yellow-500 animate-pulse", text: "text-yellow-400", border: "border-yellow-800/40", bg: "bg-yellow-900/10", label: "Đang chạy", icon: "↺" },
   };
-
-  const activeCommits = useMemo(() => {
-    return githubCommits.length > 0 ? githubCommits : commitHistory;
-  }, [githubCommits, commitHistory]);
 
   const totalPassed = activeCommits.reduce((s, c) => s + c.passTests, 0);
   const totalFailed = activeCommits.reduce((s, c) => s + c.failTests, 0);
@@ -1684,7 +1969,12 @@ function CICDTab({ tasks, team, projectId }) {
             {activeCommits.map((c, idx) => {
               const s = statusConfig[c.status];
               return (
-                <div key={c.id} className={`px-5 py-3.5 hover:bg-gray-100 dark:hover:bg-gray-900/30 transition ${idx === 0 ? "bg-gray-100 dark:bg-gray-900/20" : ""}`}>
+                <div 
+                  key={c.id} 
+                  onClick={() => fetchCommitDiff(c)}
+                  className={`px-5 py-3.5 hover:bg-gray-150/60 dark:hover:bg-gray-950/45 transition cursor-pointer select-none border-l-4 ${idx === 0 ? "bg-gray-50/60 dark:bg-gray-900/20 border-blue-500" : "border-transparent"}`}
+                  title="Bấm để xem mã nguồn thay đổi & Đánh giá code"
+                >
                   <div className="flex items-start gap-3">
 
                     {/* Timeline dot */}
@@ -1834,6 +2124,242 @@ function CICDTab({ tasks, team, projectId }) {
             </div>
           </div>
         </div>
+      {/* ── MODAL CHI TIẾT COMMIT & ĐÁNH GIÁ CODE AI ── */}
+      {selectedCommit && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn p-4">
+          <div className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-800 rounded-3xl w-full max-w-[800px] shadow-2xl overflow-hidden flex flex-col max-h-[90vh] animate-cardIn">
+            
+            {/* Header Modal */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-200 dark:border-gray-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/5">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">🛠️</span>
+                <div>
+                  <h3 className="font-bold text-base text-gray-900 dark:text-white">Chi tiết Commit & Phân tích Code</h3>
+                  <p className="text-[10px] text-gray-500 font-mono">SHA: #{selectedCommit.sha}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedCommit(null)}
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 font-semibold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 overflow-y-auto space-y-6 flex-1 custom-scrollbar">
+              
+              {/* Commit Info Grid */}
+              <div className="grid grid-cols-2 gap-4 bg-gray-50 dark:bg-black/30 border border-gray-100 dark:border-gray-800/50 p-4 rounded-2xl">
+                <div className="space-y-1.5">
+                  <p className="text-xs text-gray-400">Tin nhắn commit:</p>
+                  <p className="text-sm font-bold text-gray-850 dark:text-gray-200 leading-snug">{selectedCommit.message}</p>
+                  {selectedCommit.relatedTask && (
+                    <div className="mt-3 p-3 bg-blue-500/5 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/40 rounded-2xl space-y-2 text-left">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide">📌 CÔNG VIỆC LIÊN KẾT KANBAN</p>
+                          <h4 className="text-xs font-bold text-gray-800 dark:text-gray-200 mt-1 leading-snug">{selectedCommit.relatedTask.name}</h4>
+                        </div>
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                          selectedCommit.relatedTask.status === "done"   ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
+                          selectedCommit.relatedTask.status === "doing"  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" :
+                          selectedCommit.relatedTask.status === "review" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" :
+                                                                           "bg-gray-100 text-gray-600 dark:bg-gray-850 dark:text-gray-400"
+                        }`}>
+                          {selectedCommit.relatedTask.status === "done"   ? "Hoàn thành" :
+                           selectedCommit.relatedTask.status === "doing"  ? "Đang làm" :
+                           selectedCommit.relatedTask.status === "review" ? "Xem xét" : "Chờ xử lý"}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-4 text-[10px] text-gray-500 dark:text-gray-400">
+                        {selectedCommit.relatedTask.score && (
+                          <span>⭐ Độ khó: <strong>{selectedCommit.relatedTask.score}</strong></span>
+                        )}
+                        {selectedCommit.relatedTask.bugCount > 0 ? (
+                          <span className="text-red-500 font-medium">🐛 Lỗi: <strong>{selectedCommit.relatedTask.bugCount}</strong></span>
+                        ) : null}
+                        {selectedCommit.relatedTask.deadline && (
+                          <span>📅 Hạn: <strong>{selectedCommit.relatedTask.deadline}</strong></span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <div className="space-y-1.5 text-right">
+                  <p className="text-xs text-gray-400">Người thực hiện & Thời gian:</p>
+                  <p className="text-sm font-semibold text-gray-800 dark:text-gray-300">{selectedCommit.author}</p>
+                  <p className="text-[10px] text-gray-500">{selectedCommit.time} ({selectedCommit.branch})</p>
+                </div>
+              </div>
+
+              {/* Code Changes Section */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Mã nguồn thay đổi (Code Diff)</h4>
+                
+                {commitDiffLoading ? (
+                  <div className="flex flex-col items-center justify-center py-8 gap-3">
+                    <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-xs text-gray-500 italic">Đang phân tích cấu trúc mã nguồn từ repository...</p>
+                  </div>
+                ) : !commitDiff || commitDiff.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic text-center py-4">Không tìm thấy mã nguồn thay đổi.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {commitDiff.map((file, fIdx) => (
+                      <div key={fIdx} className="border border-gray-200 dark:border-gray-850 rounded-2xl overflow-hidden">
+                        {/* File path header */}
+                        <div className="bg-gray-50 dark:bg-black/40 px-4 py-2 text-xs font-mono font-semibold text-gray-700 dark:text-gray-400 border-b border-gray-200 dark:border-gray-850 flex items-center justify-between">
+                          <span className="truncate max-w-[500px]" title={file.filename}>{file.filename}</span>
+                          <span className="flex-shrink-0 text-[10px] px-2 py-0.5 rounded bg-blue-500/10 text-blue-400 font-bold border border-blue-500/20">
+                            +{file.additions} -{file.deletions}
+                          </span>
+                        </div>
+                        {/* Diff code content */}
+                        <pre className="p-4 bg-[#080c14] text-gray-300 text-xs font-mono overflow-x-auto whitespace-pre leading-relaxed max-h-[220px] custom-scrollbar">
+                          {file.patch.split("\n").map((line, lIdx) => {
+                            const isAdded = line.startsWith("+") && !line.startsWith("+++");
+                            const isRemoved = line.startsWith("-") && !line.startsWith("---");
+                            return (
+                              <div 
+                                key={lIdx} 
+                                className={`px-2 py-0.5 rounded ${
+                                  isAdded ? "text-green-400 bg-green-950/20" : 
+                                  isRemoved ? "text-red-400 bg-red-950/25" : ""
+                                }`}
+                              >
+                                {line}
+                              </div>
+                            );
+                          })}
+                        </pre>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* AI Code Review Section */}
+              <div className="pt-4 border-t border-gray-200 dark:border-gray-800 space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                    <span>✨</span> Đánh giá chất lượng bằng AI
+                  </h4>
+                  {!aiReviewResult && !aiReviewing && (
+                    <button
+                      onClick={handleAIReview}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl shadow-md shadow-blue-500/20 transition-all hover:scale-[1.02] active:scale-95 flex items-center gap-1.5"
+                    >
+                      🤖 Bắt đầu Đánh giá Code
+                    </button>
+                  )}
+                </div>
+
+                {aiReviewing && (
+                  <div className="flex flex-col items-center justify-center py-10 gap-3 bg-blue-500/5 border border-blue-500/20 rounded-2xl">
+                    <div className="relative w-10 h-10">
+                      <div className="absolute inset-0 border-4 border-blue-500/20 rounded-full" />
+                      <div className="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                      <div className="absolute inset-2 bg-blue-500/10 rounded-full flex items-center justify-center text-sm">🤖</div>
+                    </div>
+                    <p className="text-xs text-gray-500 font-medium animate-pulse">Trợ lý AI đang chấm điểm logic code & kiểm tra thời hạn...</p>
+                  </div>
+                )}
+
+                {aiReviewResult && (
+                  <div className="space-y-4 animate-fadeIn">
+                    <div className="grid grid-cols-3 gap-4">
+                      
+                      {/* Relevance Card */}
+                      <div className="p-4 bg-gray-50 dark:bg-black/25 border border-gray-200 dark:border-gray-855 rounded-2xl space-y-3 flex flex-col justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">1. Độ Liên Quan</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">
+                            {aiReviewResult.relevance?.comment}
+                          </p>
+                        </div>
+                        <div className="pt-2">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold font-mono border ${
+                            aiReviewResult.relevance?.level === "Cao" ? "bg-green-500/10 text-green-400 border-green-500/25" :
+                            aiReviewResult.relevance?.level === "Trung bình" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/25" :
+                                                                              "bg-red-500/10 text-red-400 border-red-500/25"
+                          }`}>
+                            Cấp độ: {aiReviewResult.relevance?.level}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Stability Card */}
+                      <div className="p-4 bg-gray-50 dark:bg-black/25 border border-gray-200 dark:border-gray-855 rounded-2xl space-y-3 flex flex-col justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">2. Độ Ổn Định</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">
+                            {aiReviewResult.stability?.comment}
+                          </p>
+                        </div>
+                        <div className="pt-2">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold font-mono border ${
+                            aiReviewResult.stability?.level === "Cao" ? "bg-green-500/10 text-green-400 border-green-500/25" :
+                            aiReviewResult.stability?.level === "Trung bình" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/25" :
+                                                                              "bg-red-500/10 text-red-400 border-red-500/25"
+                          }`}>
+                            Cấp độ: {aiReviewResult.stability?.level}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Risk Card */}
+                      <div className="p-4 bg-gray-50 dark:bg-black/25 border border-gray-200 dark:border-gray-855 rounded-2xl space-y-3 flex flex-col justify-between">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">3. Mức Độ Rủi Ro</p>
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-2 leading-relaxed">
+                            {aiReviewResult.risk?.comment}
+                          </p>
+                        </div>
+                        <div className="pt-2">
+                          <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold font-mono border ${
+                            aiReviewResult.risk?.level === "Thấp" ? "bg-green-500/10 text-green-400 border-green-500/25" :
+                            aiReviewResult.risk?.level === "Trung bình" ? "bg-yellow-500/10 text-yellow-400 border-yellow-500/25" :
+                                                                          "bg-red-500/10 text-red-400 border-red-500/25"
+                          }`}>
+                            Mức rủi ro: {aiReviewResult.risk?.level}
+                          </span>
+                        </div>
+                      </div>
+
+                    </div>
+                    <div className="p-3 bg-blue-500/5 border border-blue-500/10 rounded-xl text-[10px] text-gray-500 flex items-center gap-2">
+                      <span>💡</span>
+                      <span>Mức độ đánh giá được kết xuất dựa trên dữ liệu so khớp Git-Kanban và logic phân tích mã nguồn từ trợ lý AI.</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Footer Modal */}
+            <div className="px-6 py-4 bg-gray-50 dark:bg-black/20 border-t border-gray-200 dark:border-gray-800/80 flex justify-end gap-2">
+              {aiReviewResult && (
+                <button
+                  onClick={handleAIReview}
+                  className="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 text-xs font-semibold rounded-xl transition"
+                >
+                  🔄 Đánh giá lại
+                </button>
+              )}
+              <button 
+                onClick={() => setSelectedCommit(null)}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/20"
+              >
+                Đóng phân tích
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
@@ -1852,18 +2378,49 @@ function TabPlaceholder({ label }) {
 /* ═══════════════════════════════════════
    MEMBERS TAB
 ═══════════════════════════════════════ */
-function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
-  const [emailQuery, setEmailQuery] = useState("");
-  const [results,    setResults]    = useState([]);
-  const [searching,  setSearching]  = useState(false);
-  const [searchDone, setSearchDone] = useState(false); // đã search xong chưa
-  const [apiError,   setApiError]   = useState(false); // backend chưa chạy?
-  const [showDrop,   setShowDrop]   = useState(false);
-  const [inviting,   setInviting]   = useState(null);
-  const [removing,   setRemoving]   = useState(null);
-  const [toast,      setToast]      = useState(null);
+function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
+  const [emailQuery,          setEmailQuery]          = useState("");
+  const [results,             setResults]             = useState([]);
+  const [searching,           setSearching]           = useState(false);
+  const [searchDone,          setSearchDone]          = useState(false);
+  const [apiError,            setApiError]            = useState(false);
+  const [showDrop,            setShowDrop]            = useState(false);
+  const [inviting,            setInviting]            = useState(null);
+
+  const [selectedMember, setSelectedMember] = useState(null);
+
+  const handleMemberClick = (member) => {
+    if (!isLeader && !isOwner) {
+      alert("Chỉ có Trưởng nhóm mới có quyền xem thông tin chi tiết đóng góp của thành viên!");
+      return;
+    }
+    setSelectedMember(member);
+  };
+  const [removing,            setRemoving]            = useState(null);
+  const [toast,               setToast]               = useState(null);
+  const [pendingInvitations,  setPendingInvitations]  = useState([]);
+  const [loadingPending,      setLoadingPending]      = useState(false);
   const debRef  = useRef(null);
   const dropRef = useRef(null);
+
+  /* Fetch pending invitations của project (chỉ owner) */
+  const fetchPendingInvitations = useCallback(async () => {
+    if (!isOwner || !projectId) return;
+    setLoadingPending(true);
+    try {
+      const { default: apiClient } = await import("../services/api");
+      const res = await apiClient.get(`/projects/${projectId}/invitations/pending`);
+      setPendingInvitations(res.data?.data ?? []);
+    } catch {
+      setPendingInvitations([]);
+    } finally {
+      setLoadingPending(false);
+    }
+  }, [isOwner, projectId]);
+
+  useEffect(() => {
+    fetchPendingInvitations();
+  }, [fetchPendingInvitations]);
 
   /* Show toast */
   const showToast = (msg, type = "success") => {
@@ -1919,20 +2476,18 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  /* Mời thành viên */
+  /* Gửi lời mời (tạo Invitation PENDING, không thêm trực tiếp) */
   const handleInvite = async (user) => {
     setInviting(user.email);
     try {
       const { default: apiClient } = await import("../services/api");
       await apiClient.post(`/projects/${projectId}/members`, { email: user.email });
-      const newMember = { id: String(user.id), name: user.fullName || user.username, email: user.email };
-      const updated = [...team, newMember];
-      setTeam(updated);
-      localStorage.setItem("team", JSON.stringify(updated));
       setEmailQuery(""); setResults([]); setShowDrop(false);
-      showToast(`Đã mời ${user.fullName || user.username} vào dự án!`);
+      showToast(`Đã gửi lời mời cho ${user.fullName || user.username}! Ang chờ xác nhận.`);
+      // Refresh pending list
+      await fetchPendingInvitations();
     } catch (err) {
-      showToast(err.response?.data?.message || "Mời thất bại. Vui lòng thử lại.", "error");
+      showToast(err.response?.data?.message || "Gửi lời mời thất bại. Vui lòng thử lại.", "error");
     } finally { setInviting(null); }
   };
 
@@ -1964,11 +2519,30 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
     const done    = myTasks.filter((t) => t.status === "done").length;
     const total   = myTasks.length;
     const inProgress = myTasks.filter((t) => t.status === "doing").length;
-    const overdue    = myTasks.filter(isOverdue).length;
+    
+    // Thống kê chi tiết
+    const overdueCount = myTasks.filter(isTaskOverdue).length;
+    const onTimeCount  = myTasks.filter(isCompletedOnTime).length;
+    const contributionScore = myTasks.filter(t => t.status === "done").reduce((sum, t) => sum + (parseInt(t.score) || 0), 0);
+
     const bugs       = myTasks.reduce((s, t) => s + (t.bugCount || 0), 0);
     const pct        = total > 0 ? Math.round((done / total) * 100) : 0;
     const barColor   = pct >= 80 ? "bg-green-500" : pct >= 40 ? "bg-blue-500" : "bg-yellow-500";
-    return { ...m, myTasks, done, total, inProgress, overdue, bugs, pct, barColor };
+    
+    return { 
+      ...m, 
+      myTasks, 
+      done, 
+      total, 
+      inProgress, 
+      overdue: overdueCount, // Giữ tên cũ hoặc gán đè
+      overdueCount,
+      onTimeCount,
+      contributionScore,
+      bugs, 
+      pct, 
+      barColor 
+    };
   });
 
   /* Summary stats */
@@ -2141,7 +2715,44 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
         </div>
       )}
 
-      {/* MEMBERS GRID */}
+      {/* PENDING INVITATIONS — chỉ owner thấy */}
+      {isOwner && pendingInvitations.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 dark:bg-amber-900/10 dark:border-amber-700/30 rounded-2xl p-5">
+          <h3 className="text-sm font-bold text-amber-700 dark:text-amber-400 mb-4 flex items-center gap-2">
+            <span className="text-lg">⏳</span>
+            Đang chờ xác nhận ({pendingInvitations.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {pendingInvitations.map((inv) => (
+              <div
+                key={inv.id}
+                className="flex items-center gap-3 bg-white border border-amber-200 dark:bg-[#0f1422] dark:border-amber-700/20 rounded-xl p-3.5"
+              >
+                {/* Avatar */}
+                <div
+                  className={`w-10 h-10 rounded-full ${avatarColor(inv.inviteeName)}
+                    flex items-center justify-center text-sm font-bold text-white flex-shrink-0`}
+                >
+                  {inv.inviteeName?.charAt(0)?.toUpperCase() || "?"}
+                </div>
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                    {inv.inviteeName}
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{inv.inviteeEmail}</p>
+                </div>
+                {/* Badge */}
+                <span className="flex-shrink-0 text-[10px] font-bold px-2 py-1 bg-amber-100 border border-amber-300 text-amber-700 dark:bg-amber-900/30 dark:border-amber-600/40 dark:text-amber-400 rounded-full">
+                  Chờ
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+
       {team.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-gray-400 dark:text-gray-600 gap-3">
           <div className="text-5xl opacity-40 dark:opacity-20">👥</div>
@@ -2153,7 +2764,9 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
           {memberStats.map((m) => (
             <div
               key={m.id}
-              className="bg-white border border-gray-200 hover:border-blue-400 dark:bg-[#0b0f1a] dark:border-gray-800 dark:hover:border-blue-500/50 rounded-2xl p-5 transition-all shadow-sm dark:shadow-none"
+              onClick={() => handleMemberClick(m)}
+              className="bg-white border border-gray-200 hover:border-blue-400 dark:bg-[#0b0f1a] dark:border-gray-800 dark:hover:border-blue-500/50 rounded-2xl p-5 transition-all shadow-sm dark:shadow-none cursor-pointer hover:shadow-md hover:scale-[1.01] flex flex-col justify-between"
+              title={isLeader || isOwner ? "Xem chi tiết đóng góp & hiệu suất" : "Thành viên dự án"}
             >
               {/* Avatar + tên + badge */}
               <div className="flex items-start gap-3 mb-4">
@@ -2170,12 +2783,17 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
                     )}
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{m.email || ""}</p>
+                  
+                  {/* Contribution Badge */}
+                  <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-lg text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                    🏆 Đóng góp: {m.contributionScore} điểm
+                  </div>
                 </div>
 
                 {/* Nút xóa — chỉ owner */}
                 {isOwner && (
                   <button
-                    onClick={() => handleRemove(m)}
+                    onClick={(e) => { e.stopPropagation(); handleRemove(m); }}
                     disabled={removing === m.id}
                     className="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:text-gray-600 dark:hover:text-red-400 dark:hover:bg-red-900/20 rounded-lg transition"
                     title="Xóa thành viên"
@@ -2248,6 +2866,159 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner }) {
           ))}
         </div>
       )}
+      {/* ── MODAL CHI TIẾT ĐÓNG GÓP THÀNH VIÊN ── */}
+      {selectedMember && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 animate-fadeIn">
+          <div className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-700 rounded-3xl w-[580px] shadow-2xl overflow-hidden animate-cardIn">
+            
+            {/* Header Modal */}
+            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/10">
+              <div className="flex items-center gap-3">
+                <span className="text-xl">📊</span>
+                <div>
+                  <h3 className="font-bold text-base text-gray-900 dark:text-white">Phân tích Hiệu suất Thành viên</h3>
+                  <p className="text-[10px] text-gray-500">Dành riêng cho Quản lý / Trưởng nhóm</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedMember(null)} 
+                className="text-gray-400 hover:text-gray-700 dark:hover:text-white transition w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-100 dark:hover:bg-gray-800 font-semibold"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Content Modal */}
+            <div className="p-6 space-y-6 max-h-[500px] overflow-y-auto custom-scrollbar">
+              
+              {/* Profile Overview */}
+              <div className="flex items-center gap-4 bg-gray-50 dark:bg-black/30 border border-gray-100 dark:border-gray-800/50 p-4 rounded-2xl">
+                <div className={`w-14 h-14 rounded-full ${avatarColor(selectedMember.name)} flex items-center justify-center text-xl font-bold text-white shadow-md flex-shrink-0`}>
+                  {selectedMember.name?.charAt(0)?.toUpperCase()}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <h4 className="font-bold text-gray-900 dark:text-white text-lg truncate">{selectedMember.name}</h4>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate">{selectedMember.email}</p>
+                  <p className="text-[10px] mt-1 inline-block px-2.5 py-0.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 font-semibold rounded-full border border-indigo-100 dark:border-indigo-800/30">
+                    ID: {selectedMember.id}
+                  </p>
+                </div>
+              </div>
+
+              {/* Performance Stats */}
+              <div>
+                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Chỉ số Hiệu suất & Đóng góp</h5>
+                <div className="grid grid-cols-3 gap-3">
+                  
+                  {/* Contribution Score */}
+                  <div className="p-4 rounded-2xl bg-blue-50/50 dark:bg-blue-950/15 border border-blue-100/50 dark:border-blue-900/30 flex flex-col justify-between">
+                    <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide">Điểm Đóng Góp</p>
+                    <p className="text-2xl font-black text-blue-700 dark:text-blue-300 font-mono mt-2">{selectedMember.contributionScore} ★</p>
+                    <p className="text-[9px] text-gray-500 mt-1">Dựa trên điểm của task đã xong</p>
+                  </div>
+
+                  {/* Tasks On Time */}
+                  <div className="p-4 rounded-2xl bg-green-50/50 dark:bg-green-950/15 border border-green-100/50 dark:border-green-900/30 flex flex-col justify-between">
+                    <p className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wide">Đúng Hạn</p>
+                    <p className="text-2xl font-black text-green-700 dark:text-green-300 font-mono mt-2">
+                      {selectedMember.onTimeCount} <span className="text-xs font-medium text-gray-500">/ {selectedMember.done} done</span>
+                    </p>
+                    <p className="text-[9px] text-gray-500 mt-1">
+                      Tỷ lệ: {selectedMember.done > 0 ? Math.round((selectedMember.onTimeCount / selectedMember.done) * 100) : 100}%
+                    </p>
+                  </div>
+
+                  {/* Tasks Overdue */}
+                  <div className="p-4 rounded-2xl bg-red-50/50 dark:bg-red-950/15 border border-red-100/50 dark:border-red-900/30 flex flex-col justify-between">
+                    <p className="text-[10px] font-bold text-red-600 dark:text-red-400 uppercase tracking-wide">Trễ Hạn</p>
+                    <p className="text-2xl font-black text-red-700 dark:text-red-300 font-mono mt-2">{selectedMember.overdueCount} task</p>
+                    <p className="text-[9px] text-gray-500 mt-1">Gồm cả task đang làm trễ hạn</p>
+                  </div>
+
+                </div>
+              </div>
+
+              {/* Tasks List Table */}
+              <div>
+                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Danh sách công việc phụ trách ({selectedMember.myTasks.length})</h5>
+                {selectedMember.myTasks.length === 0 ? (
+                  <p className="text-xs text-gray-500 italic py-4 text-center">Chưa được giao công việc nào.</p>
+                ) : (
+                  <div className="border border-gray-100 dark:border-gray-800 rounded-2xl overflow-hidden">
+                    <table className="w-full text-left border-collapse text-xs">
+                      <thead>
+                        <tr className="bg-gray-50 dark:bg-black/20 border-b border-gray-100 dark:border-gray-800">
+                          <th className="p-3 font-semibold text-gray-500 dark:text-gray-400">Tên công việc</th>
+                          <th className="p-3 font-semibold text-gray-500 dark:text-gray-400 text-center">Độ khó</th>
+                          <th className="p-3 font-semibold text-gray-500 dark:text-gray-400 text-center">Trạng thái</th>
+                          <th className="p-3 font-semibold text-gray-500 dark:text-gray-400 text-right">Đúng hạn</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100 dark:divide-gray-800/50">
+                        {selectedMember.myTasks.map((t) => {
+                          const isDone = t.status === "done";
+                          const isOver = isTaskOverdue(t);
+                          const onTime = isCompletedOnTime(t);
+                          return (
+                            <tr key={t.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-900/10 transition-all">
+                              <td className="p-3 font-medium text-gray-850 dark:text-gray-250">
+                                <div className="truncate max-w-[200px]" title={t.name}>{t.name}</div>
+                                {t.deadline && <span className="text-[9px] text-gray-400 dark:text-gray-500 block mt-0.5">Hạn: {t.deadline}</span>}
+                              </td>
+                              <td className="p-3 text-center font-bold text-gray-700 dark:text-gray-300 font-mono">
+                                {t.score || "—"}
+                              </td>
+                              <td className="p-3 text-center">
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-[9px] font-bold ${
+                                  t.status === "done"   ? "bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-400" :
+                                  t.status === "doing"  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400" :
+                                  t.status === "review" ? "bg-amber-100 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400" :
+                                                          "bg-gray-105 text-gray-600 dark:bg-gray-850 dark:text-gray-400"
+                                }`}>
+                                  {t.status === "done"   ? "Hoàn thành" :
+                                   t.status === "doing"  ? "Đang làm" :
+                                   t.status === "review" ? "Xem xét" : "Chờ xử lý"}
+                                </span>
+                              </td>
+                              <td className="p-3 text-right font-medium">
+                                {isDone ? (
+                                  onTime ? (
+                                    <span className="text-green-500 font-bold font-mono">✓ Đúng hạn</span>
+                                  ) : (
+                                    <span className="text-red-500 font-bold font-mono">✗ Trễ hạn</span>
+                                  )
+                                ) : (
+                                  isOver ? (
+                                    <span className="text-red-500 font-semibold animate-pulse">⚠ Quá hạn</span>
+                                  ) : (
+                                    <span className="text-gray-400 dark:text-gray-600">—</span>
+                                  )
+                                )}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+            </div>
+
+            {/* Footer Modal */}
+            <div className="px-6 py-4 bg-gray-50 dark:bg-black/20 border-t border-gray-100 dark:border-gray-800/80 flex justify-end">
+              <button 
+                onClick={() => setSelectedMember(null)}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/20 hover:shadow-lg active:scale-95"
+              >
+                Đóng phân tích
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2287,15 +3058,360 @@ export default function ProjectDetailPage() {
   const [chatOpen, setChatOpen] = useState(false);
   const [chatQuestion, setChatQuestion] = useState("");
 
+  /* Custom AI Alert Dialog */
+  const [aiAlert, setAiAlert] = useState(null);
+
   /* Add column */
   const [newCol, setNewCol] = useState(false);
   const [newColName, setNewColName] = useState("");
 
+  const [projectDetail, setProjectDetail] = useState(null);
+  const isOwner = projectDetail ? (String(projectDetail.ownerId) === String(currentUser?.id)) : true;
+
+  const gitUrl = useMemo(() => {
+    return localStorage.getItem("project_git_" + id) || "";
+  }, [id]);
+
+  const [githubCommits, setGithubCommits] = useState([]);
+  const [githubLoading, setGithubLoading] = useState(false);
+  const [githubError, setGithubError] = useState("");
+
+  const parseGithubUrl = useCallback((url) => {
+    if (!url) return null;
+    let cleanUrl = url.trim();
+    if (cleanUrl.endsWith(".git")) {
+      cleanUrl = cleanUrl.slice(0, -4);
+    }
+    const httpsMatch = cleanUrl.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+    if (httpsMatch) {
+      return { owner: httpsMatch[1], repo: httpsMatch[2] };
+    }
+    const sshMatch = cleanUrl.match(/github\.com:([^\/]+)\/([^\/]+)/);
+    if (sshMatch) {
+      return { owner: sshMatch[1], repo: sshMatch[2] };
+    }
+    return null;
+  }, []);
+
+  const fetchGithubCommits = useCallback(async () => {
+    const githubInfo = parseGithubUrl(gitUrl);
+    if (!githubInfo) {
+      setGithubCommits([]);
+      setGithubError("");
+      return;
+    }
+
+    setGithubLoading(true);
+    setGithubError("");
+    try {
+      const { owner, repo } = githubInfo;
+      const [commitsRes, runsRes] = await Promise.all([
+        fetch(`https://api.github.com/repos/${owner}/${repo}/commits?per_page=10`),
+        fetch(`https://api.github.com/repos/${owner}/${repo}/actions/runs?per_page=20`).catch(() => null)
+      ]);
+
+      if (!commitsRes.ok) {
+        throw new Error(`GitHub API returned status ${commitsRes.status}`);
+      }
+
+      const rawCommits = await commitsRes.json();
+      
+      let workflowRuns = [];
+      if (runsRes && runsRes.ok) {
+        try {
+          const runsData = await runsRes.json();
+          workflowRuns = runsData.workflow_runs || [];
+        } catch (e) {
+          console.warn("Lỗi parse JSON actions runs:", e);
+        }
+      }
+
+      const mappedCommits = rawCommits.map((c, idx) => {
+        const matchRun = workflowRuns.find((r) => r.head_sha === c.sha);
+        
+        let status = "success";
+        if (matchRun) {
+          if (matchRun.status === "completed") {
+            status = matchRun.conclusion === "success" ? "success" : "failed";
+          } else {
+            status = "running";
+          }
+        } else {
+          status = idx === 1 ? "failed" : idx === 0 ? "running" : "success";
+        }
+
+        const passTests = status === "success" ? Math.floor(Math.random() * 20) + 15 : status === "running" ? 8 : 4;
+        const failTests = status === "failed" ? Math.floor(Math.random() * 4) + 1 : 0;
+
+        const githubLogin = c.author?.login || "";
+        const gitEmail = c.commit.author?.email || "";
+        const gitName = c.commit.author?.name || "";
+
+        const matchedMember = team.find(m => 
+          (m.githubUsername && githubLogin && m.githubUsername.toLowerCase() === githubLogin.toLowerCase()) ||
+          (m.email && gitEmail && m.email.toLowerCase() === gitEmail.toLowerCase()) ||
+          (m.fullName && gitName && m.fullName.toLowerCase() === gitName.toLowerCase()) ||
+          (m.username && githubLogin && m.username.toLowerCase() === githubLogin.toLowerCase())
+        );
+
+        const authorName = matchedMember ? (matchedMember.fullName || matchedMember.name) : (c.commit.author?.name || c.author?.login || "Unknown");
+
+        return {
+          id: c.sha,
+          author: authorName,
+          authorInit: authorName.charAt(0).toUpperCase(),
+          message: c.commit.message.split("\n")[0],
+          branch: matchRun ? matchRun.head_branch : "main",
+          status,
+          passTests,
+          failTests,
+          totalTests: passTests + failTests,
+          sha: c.sha.slice(0, 7),
+          time: new Date(c.commit.author?.date || Date.now()).toLocaleString("vi-VN", {
+            hour: "2-digit",
+            minute: "2-digit",
+            day: "2-digit",
+            month: "2-digit",
+          }),
+          relatedTask: null,
+          authorEmail: gitEmail,
+          authorGithubLogin: githubLogin,
+        };
+      });
+
+      setGithubCommits(mappedCommits);
+    } catch (err) {
+      console.warn("Lỗi tải GitHub commits. Sử dụng fallback giả lập.", err);
+      setGithubError("Không thể kết nối đến GitHub API (kho riêng tư hoặc hết hạn mức). Đang hiển thị dữ liệu giả lập.");
+      setGithubCommits([]);
+    } finally {
+      setGithubLoading(false);
+    }
+  }, [gitUrl, team, parseGithubUrl]);
+
+  useEffect(() => {
+    fetchGithubCommits();
+  }, [fetchGithubCommits]);
+
+  const commitHistory = useMemo(() => {
+    const statuses = ["success", "success", "success", "failed", "running"];
+    const msgs = [
+      "feat: thêm chức năng xác thực người dùng",
+      "fix: sửa lỗi validate form đăng nhập",
+      "refactor: tách logic service layer",
+      "feat: tích hợp JWT authentication",
+      "fix: xử lý exception NullPointerException",
+      "test: thêm unit test cho UserService",
+      "feat: hoàn thiện API quản lý dự án",
+      "fix: sửa lỗi ngày tháng không đúng định dạng",
+      "chore: cập nhật dependencies",
+      "feat: thêm drag-drop cho Kanban board",
+    ];
+    const branches = ["main", "develop", "feature/auth", "feature/kanban", "hotfix/login"];
+
+    const rows = [];
+    const now = Date.now();
+
+    team.forEach((m, mi) => {
+      const myTasks = tasks.filter((t) => t.assignee?.id === m.id);
+      const count = Math.max(2, myTasks.length + 1);
+      for (let i = 0; i < count; i++) {
+        const relatedTask = myTasks[i % Math.max(myTasks.length, 1)];
+        const bugCount = relatedTask?.bugCount || 0;
+        const status = bugCount > 0 && i === 0
+          ? "failed"
+          : statuses[(mi * 3 + i) % statuses.length];
+        const passTests = status === "success" ? Math.floor(Math.random() * 20) + 10 : Math.floor(Math.random() * 5);
+        const failTests = status === "failed" ? bugCount || (Math.floor(Math.random() * 5) + 1) : 0;
+        rows.push({
+          id: `${m.id}-${i}`,
+          author: m.name,
+          authorInit: m.name.charAt(0),
+          message: relatedTask ? `feat: ${relatedTask.name.slice(0, 40)}` : msgs[(mi * 2 + i) % msgs.length],
+          branch: branches[(mi + i) % branches.length],
+          status,
+          passTests,
+          failTests,
+          totalTests: passTests + failTests,
+          sha: Math.random().toString(16).slice(2, 9),
+          time: new Date(now - (mi * count + i) * 1000 * 60 * 37).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }),
+          relatedTask,
+          authorEmail: m.email || "",
+          authorGithubLogin: m.githubUsername || "",
+        });
+      }
+    });
+
+    if (team.length === 0) {
+      for (let i = 0; i < 5; i++) {
+        rows.push({
+          id: `demo-${i}`,
+          author: "Demo User",
+          authorInit: "D",
+          message: msgs[i],
+          branch: branches[i % branches.length],
+          status: statuses[i % statuses.length],
+          passTests: 12,
+          failTests: i === 1 ? 3 : 0,
+          totalTests: i === 1 ? 15 : 12,
+          sha: Math.random().toString(16).slice(2, 9),
+          time: new Date(Date.now() - i * 1000 * 60 * 45).toLocaleString("vi-VN", { hour: "2-digit", minute: "2-digit", day: "2-digit", month: "2-digit" }),
+          relatedTask: null,
+          authorEmail: "",
+          authorGithubLogin: "",
+        });
+      }
+    }
+
+    return rows.sort((a, b) => b.id.localeCompare(a.id));
+  }, [tasks, team]);
+
+  const cleanText = useCallback((str) => {
+    if (!str) return "";
+    return str
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .trim();
+  }, []);
+
+  const isCommitMatchingTask = useCallback((commitMsg, taskName) => {
+    let msg = cleanText(commitMsg);
+    let task = cleanText(taskName);
+    if (!msg || !task) return false;
+    msg = msg.replace(/^(feat|fix|chore|refactor|test|docs|style|build|ci)\s+/, "");
+    return msg.includes(task) || task.includes(msg);
+  }, [cleanText]);
+
+  const activeCommits = useMemo(() => {
+    const list = githubCommits.length > 0 ? githubCommits : commitHistory;
+    return list.map(c => {
+      if (c.relatedTask) return c;
+
+      const matchedMember = team.find(m => 
+        (m.fullName && c.author && m.fullName.toLowerCase() === c.author.toLowerCase()) ||
+        (m.name && c.author && m.name.toLowerCase() === c.author.toLowerCase()) ||
+        (m.username && c.authorGithubLogin && m.username.toLowerCase() === c.authorGithubLogin.toLowerCase()) ||
+        (m.githubUsername && c.authorGithubLogin && m.githubUsername.toLowerCase() === c.authorGithubLogin.toLowerCase())
+      );
+
+      if (!matchedMember) return c;
+
+      const matchedTask = tasks.find(t => 
+        t.assignee?.id === matchedMember.id && 
+        isCommitMatchingTask(c.message, t.name)
+      );
+
+      return {
+        ...c,
+        relatedTask: matchedTask || null
+      };
+    });
+  }, [githubCommits, commitHistory, tasks, team, isCommitMatchingTask]);
+
+  const [toastMessage, setToastMessage] = useState(null);
+  const [processedCommits, setProcessedCommits] = useState(() => {
+    const saved = localStorage.getItem(`processed_commits_${id}`);
+    return saved ? JSON.parse(saved) : [];
+  });
+
+  useEffect(() => {
+    if (id) {
+      localStorage.setItem(`processed_commits_${id}`, JSON.stringify(processedCommits));
+    }
+  }, [processedCommits, id]);
+
+  useEffect(() => {
+    if (activeCommits.length === 0 || tasks.length === 0 || team.length === 0) return;
+
+    let updatedTasks = [...tasks];
+    let hasChanges = false;
+    let autoMovedList = [];
+    let newlyProcessed = [];
+
+    const successCommits = activeCommits.filter(c => c.status === "success" && !processedCommits.includes(c.id));
+
+    successCommits.forEach(c => {
+      const matchedMember = team.find(m => 
+        (m.fullName && c.author && m.fullName.toLowerCase() === c.author.toLowerCase()) ||
+        (m.name && c.author && m.name.toLowerCase() === c.author.toLowerCase()) ||
+        (m.username && c.authorGithubLogin && m.username.toLowerCase() === c.authorGithubLogin.toLowerCase()) ||
+        (m.githubUsername && c.authorGithubLogin && m.githubUsername.toLowerCase() === c.authorGithubLogin.toLowerCase())
+      );
+
+      if (!matchedMember) return;
+
+      const myActiveTasks = updatedTasks.filter(t => 
+        t.assignee?.id === matchedMember.id && 
+        t.status !== "review" && 
+        t.status !== "done"
+      );
+
+      for (let t of myActiveTasks) {
+        if (isCommitMatchingTask(c.message, t.name)) {
+          t.status = "review";
+          hasChanges = true;
+          autoMovedList.push({ taskName: t.name, authorName: matchedMember.name || matchedMember.fullName });
+          newlyProcessed.push(c.id);
+          break;
+        }
+      }
+    });
+
+    if (newlyProcessed.length > 0) {
+      setProcessedCommits(prev => [...prev, ...newlyProcessed]);
+    }
+
+    if (hasChanges) {
+      saveTasks(updatedTasks);
+      if (autoMovedList.length > 0) {
+        const listText = autoMovedList.map(item => `🤖 Đã di chuyển task "${item.taskName}" của ${item.authorName} sang cột "Đang xem xét" do commit build thành công!`).join("\n");
+        setToastMessage(listText);
+        setTimeout(() => setToastMessage(null), 6000);
+      }
+    }
+  }, [activeCommits, team, tasks, processedCommits, id, isCommitMatchingTask]);
+
+  const fetchProjectAndMembers = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { default: apiClient } = await import("../services/api");
+      
+      // Fetch project detail
+      const projRes = await apiClient.get(`/projects/${id}`);
+      const projData = projRes.data?.data;
+      if (projData) {
+        setProjectDetail(projData);
+        setProjectName(projData.name);
+      }
+      
+      // Fetch members from backend
+      const membersRes = await apiClient.get(`/projects/${id}/members`);
+      const membersData = (membersRes.data?.data || []).map(m => ({
+        ...m,
+        name: m.fullName || m.name || m.username || "Thành viên"
+      }));
+      setTeam(membersData);
+      localStorage.setItem("team", JSON.stringify(membersData));
+    } catch (err) {
+      console.warn("Lỗi tải thông tin dự án/thành viên từ backend:", err);
+      // Fallback sang localStorage nếu API lỗi
+      const projects = JSON.parse(localStorage.getItem("projects")) || [];
+      const current = projects.find((p) => p.id === id);
+      if (current) setProjectName(current.name);
+      setTeam(JSON.parse(localStorage.getItem("team")) || []);
+    }
+  }, [id]);
+
   /* ── LOAD ── */
   useEffect(() => {
-    const projects = JSON.parse(localStorage.getItem("projects")) || [];
-    const current = projects.find((p) => p.id === id);
-    if (current) setProjectName(current.name);
+    fetchProjectAndMembers();
+
+    // Lắng nghe sự kiện storage-update để tự động reload thành viên
+    const handler = () => fetchProjectAndMembers();
+    window.addEventListener("storage-update", handler);
+    window.addEventListener("storage", handler);
 
     const cols = JSON.parse(localStorage.getItem("columns_" + id)) || [];
     const tks  = JSON.parse(localStorage.getItem("tasks_" + id)) || [];
@@ -2313,8 +3429,12 @@ export default function ProjectDetailPage() {
       setColumns(cols);
     }
     setTasks(tks);
-    setTeam(JSON.parse(localStorage.getItem("team")) || []);
-  }, [id]);
+
+    return () => {
+      window.removeEventListener("storage-update", handler);
+      window.removeEventListener("storage", handler);
+    };
+  }, [id, fetchProjectAndMembers]);
 
   const saveTasks = (data) => { setTasks(data); localStorage.setItem("tasks_" + id, JSON.stringify(data)); };
   const saveColumns = (data) => { setColumns(data); localStorage.setItem("columns_" + id, JSON.stringify(data)); };
@@ -2351,13 +3471,22 @@ export default function ProjectDetailPage() {
       const oldTask = tasks.find((t) => t.id === editTask.id);
       updated = tasks.map((t) =>
         t.id === editTask.id
-          ? { ...t, name: formName, assignee: assigneeObj, score: scoreVal, bugCount: bugVal, deadline: formDeadline || null }
+          ? { 
+              ...t, 
+              name: formName, 
+              assignee: assigneeObj, 
+              score: scoreVal, 
+              bugCount: bugVal, 
+              deadline: formDeadline || null,
+              completedAt: t.status === "done" ? (t.completedAt || new Date().toISOString().split("T")[0]) : null
+            }
           : t
       );
       if (assigneeObj && oldTask?.assignee?.id !== assigneeObj.id) {
         notifyAssignee(formName, assigneeObj);
       }
     } else {
+      const isDone = editTask.status === "done";
       const newTask = {
         id: Date.now().toString(),
         name: formName,
@@ -2366,6 +3495,7 @@ export default function ProjectDetailPage() {
         score: scoreVal,
         bugCount: bugVal,
         deadline: formDeadline || null,
+        completedAt: isDone ? new Date().toISOString().split("T")[0] : null,
       };
       updated = [...tasks, newTask];
       if (assigneeObj) {
@@ -2409,6 +3539,142 @@ export default function ProjectDetailPage() {
     setChatOpen(true);
   };
 
+  /* ── AI TASK SWAP REQUEST ── */
+  const handleAISwap = (taskA) => {
+    if (!taskA.assignee) {
+      setAiAlert({
+        title: "Không thể hoán đổi",
+        message: "Công việc này chưa được phân công cho ai nên không thể nhờ đổi.",
+        icon: "⚠️"
+      });
+      return;
+    }
+
+    const userA = taskA.assignee;
+    
+    // Lọc ra các công việc đang thực hiện của các thành viên khác
+    const otherActiveTasks = tasks.filter(t => 
+      t.status !== "done" && 
+      t.assignee && 
+      !isSameMember(t.assignee, userA)
+    );
+
+    if (otherActiveTasks.length === 0) {
+      setAiAlert({
+        title: "Không tìm thấy công việc",
+        message: "Dự án hiện chưa có công việc nào khác đang thực hiện của thành viên khác để hoán đổi.",
+        icon: "🔍"
+      });
+      return;
+    }
+
+    const scoreA = parseInt(taskA.score) || 1;
+
+    // Phân loại các task của người khác
+    const easierTasks = [];
+    const harderTasks = [];
+
+    otherActiveTasks.forEach(t => {
+      const scoreT = parseInt(t.score) || 1;
+      if (scoreT < scoreA) {
+        easierTasks.push({ task: t, member: t.assignee });
+      } else {
+        harderTasks.push({ task: t, member: t.assignee });
+      }
+    });
+
+    const projectId = id;
+    const requestorName = userA.fullName || userA.name || userA.username || "Thành viên";
+
+    // 1. Trường hợp có các task dễ hơn (easierTasks)
+    if (easierTasks.length > 0) {
+      // Sắp xếp dễ nhất đứng trước (score tăng dần)
+      easierTasks.sort((a, b) => (parseInt(a.task.score) || 1) - (parseInt(b.task.score) || 1));
+
+      // Lấy người dễ nhất để gửi thông báo đầu tiên
+      const firstCandidate = easierTasks[0];
+      
+      // Tạo hàng đợi swap
+      localStorage.setItem(`swap_queue_${taskA.id}`, JSON.stringify({
+        queue: easierTasks,
+        currentIndex: 0
+      }));
+
+      // Gửi thông báo cho người đó
+      const targetNotifKey = `sys_notifs_${firstCandidate.member.id}`;
+      const targetNotifs = JSON.parse(localStorage.getItem(targetNotifKey) || "[]");
+      
+      targetNotifs.unshift({
+        id: `swap-req-${taskA.id}-${Date.now()}`,
+        type: "SWAP_REQUEST",
+        title: "🤖 Đề xuất hoán đổi công việc",
+        message: `AI nhận thấy bạn đang làm task "${firstCandidate.task.name}" (Khó: ${firstCandidate.task.score}) dễ hơn task "${taskA.name}" (Khó: ${taskA.score}) của ${requestorName} đang gặp khó khăn. Bạn có đồng ý hoán đổi công việc này không?`,
+        createdAt: Date.now(),
+        isRead: false,
+        metadata: {
+          projectId,
+          taskId: taskA.id,
+          taskName: taskA.name,
+          taskScore: taskA.score,
+          targetTaskId: firstCandidate.task.id,
+          targetTaskName: firstCandidate.task.name,
+          requestorId: userA.id,
+          requestorName,
+          targetId: firstCandidate.member.id,
+          targetName: firstCandidate.member.name || firstCandidate.member.fullName
+        }
+      });
+
+      localStorage.setItem(targetNotifKey, JSON.stringify(targetNotifs));
+      window.dispatchEvent(new CustomEvent("storage-update"));
+      
+      setAiAlert({
+        title: "Đã gửi đề xuất hoán đổi",
+        message: `Trợ lý AI đã phân tích và gửi đề xuất hoán đổi đến thành viên "${firstCandidate.member.name || firstCandidate.member.fullName}" (người đang làm việc dễ nhất).\n\nVui lòng chờ họ phản hồi trong hòm thư hệ thống.`,
+        icon: "🤖"
+      });
+    } 
+    // 2. Trường hợp tất cả công việc đều khó hơn hoặc bằng (harderTasks)
+    else {
+      // Gửi đồng loạt cho tất cả mọi người trong harderTasks
+      harderTasks.forEach(cand => {
+        const targetNotifKey = `sys_notifs_${cand.member.id}`;
+        const targetNotifs = JSON.parse(localStorage.getItem(targetNotifKey) || "[]");
+        
+        targetNotifs.unshift({
+          id: `swap-req-${taskA.id}-${cand.member.id}-${Date.now()}`,
+          type: "SWAP_REQUEST",
+          title: "🤖 Đề xuất hoán đổi công việc (Đồng loạt)",
+          message: `AI báo: ${requestorName} đang gặp khó khăn với task "${taskA.name}" (Khó: ${taskA.score}) và muốn đổi với task "${cand.task.name}" (Khó: ${cand.task.score}) của bạn. Bạn có đồng ý hoán đổi không? (Ai nhận trước sẽ được làm trước).`,
+          createdAt: Date.now(),
+          isRead: false,
+          metadata: {
+            projectId,
+            taskId: taskA.id,
+            taskName: taskA.name,
+            taskScore: taskA.score,
+            targetTaskId: cand.task.id,
+            targetTaskName: cand.task.name,
+            requestorId: userA.id,
+            requestorName,
+            targetId: cand.member.id,
+            targetName: cand.member.name || cand.member.fullName
+          }
+        });
+        
+        localStorage.setItem(targetNotifKey, JSON.stringify(targetNotifs));
+      });
+      
+      window.dispatchEvent(new CustomEvent("storage-update"));
+      
+      setAiAlert({
+        title: "Gửi đề xuất đồng loạt",
+        message: `Do công việc của mọi người đều khó hơn công việc của bạn, AI đã gửi đề xuất hoán đổi đồng loạt cho tất cả thành viên trong nhóm.\n\nNgười đầu tiên nhấn đồng ý nhận sẽ hoán đổi công việc với bạn.`,
+        icon: "🤖"
+      });
+    }
+  };
+
   /* ── COLUMN ── */
   const addColumn = () => {
     if (!newColName.trim()) return;
@@ -2429,13 +3695,25 @@ export default function ProjectDetailPage() {
     const activeCol = activeTask.status;
     const overColumn = columns.find((c) => c.id === over.id);
     if (overColumn) {
-      if (activeCol !== overColumn.id) saveTasks(tasks.map((t) => t.id === active.id ? { ...t, status: overColumn.id } : t));
+      if (activeCol !== overColumn.id) {
+        const isDone = overColumn.id === "done";
+        saveTasks(tasks.map((t) => 
+          t.id === active.id 
+            ? { ...t, status: overColumn.id, completedAt: isDone ? new Date().toISOString().split("T")[0] : null } 
+            : t
+        ));
+      }
       return;
     }
     const overTask = tasks.find((t) => t.id === over.id);
     if (!overTask) return;
     if (overTask.status !== activeCol) {
-      saveTasks(tasks.map((t) => t.id === active.id ? { ...t, status: overTask.status } : t));
+      const isDone = overTask.status === "done";
+      saveTasks(tasks.map((t) => 
+        t.id === active.id 
+          ? { ...t, status: overTask.status, completedAt: isDone ? new Date().toISOString().split("T")[0] : null } 
+          : t
+      ));
       return;
     }
     const same = tasks.filter((t) => t.status === activeCol);
@@ -2460,12 +3738,12 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* TABS */}
-      <div className="flex gap-0 px-6 mt-4 border-b border-gray-300 dark:border-gray-800">
+      <div className="flex gap-0 px-4 md:px-6 mt-4 border-b border-gray-300 dark:border-gray-800 overflow-x-auto scrollbar-hide">
         {TABS.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap ${
+            className={`px-3 md:px-4 py-2.5 text-sm font-medium border-b-2 transition whitespace-nowrap flex-shrink-0 ${
               activeTab === tab.id
                 ? "border-blue-500 text-blue-400"
                 : "border-transparent text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white"
@@ -2477,17 +3755,27 @@ export default function ProjectDetailPage() {
       </div>
 
       {/* TAB CONTENT */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-3 md:p-6">
         {activeTab === "ai" && (
           <AIHubTab key={id} tasks={tasks} team={team} saveTasks={saveTasks} projectId={id} projectName={projectName} />
         )}
 
         {activeTab === "cicd" && (
-          <CICDTab tasks={tasks} team={team} projectId={id} />
+          <CICDTab 
+            tasks={tasks} 
+            team={team} 
+            projectId={id} 
+            activeCommits={activeCommits} 
+            githubLoading={githubLoading} 
+            githubError={githubError} 
+            gitUrl={gitUrl} 
+            githubCommits={githubCommits} 
+            commitHistory={commitHistory}
+          />
         )}
 
         {activeTab === "report" && (
-          <ReportTab tasks={tasks} team={team} projectName={projectName} />
+          <ReportTab tasks={tasks} team={team} projectName={projectName} activeCommits={activeCommits} />
         )}
 
         {activeTab === "members" && (
@@ -2496,7 +3784,8 @@ export default function ProjectDetailPage() {
             team={team}
             setTeam={setTeam}
             projectId={id}
-            isOwner={true}
+            isOwner={isOwner}
+            isLeader={isLeader}
           />
         )}
 
@@ -2531,6 +3820,7 @@ export default function ProjectDetailPage() {
                   onChangeAssignee={changeAssignee}
                   onChangeScore={changeScore}
                   onOpenAI={openAI}
+                  onAISwap={handleAISwap}
                 />
               ))}
 
@@ -2577,21 +3867,21 @@ export default function ProjectDetailPage() {
       {/* ── MODAL TẠO / SỬA CÔNG VIỆC ── */}
       {modal && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-700 rounded-2xl w-[440px] shadow-2xl">
-            <div className="flex justify-between items-center px-5 pt-5 pb-4 border-b border-gray-800">
-              <h2 className="font-bold text-base">{editTask?.id ? "Chỉnh sửa công việc" : "Tạo công việc"}</h2>
-              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-white">✕</button>
+          <div className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-700 rounded-2xl w-[440px] shadow-2xl">
+            <div className="flex justify-between items-center px-5 pt-5 pb-4 border-b border-gray-200 dark:border-gray-800">
+              <h2 className="font-bold text-base text-gray-900 dark:text-white">{editTask?.id ? "Chỉnh sửa công việc" : "Tạo công việc"}</h2>
+              <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">✕</button>
             </div>
 
             <div className="px-5 py-4 space-y-4">
               {/* Tên */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Tên công việc <span className="text-red-400">*</span></label>
+                <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">Tên công việc <span className="text-red-400">*</span></label>
                 <input
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && saveTask()}
-                  className="w-full p-2.5 bg-black border border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-white"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white"
                   placeholder="Nhập tên công việc..."
                   autoFocus
                 />
@@ -2599,19 +3889,19 @@ export default function ProjectDetailPage() {
 
               {/* Deadline */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Hạn hoàn thành</label>
+                <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">Hạn hoàn thành</label>
                 <input
                   type="date"
                   value={formDeadline}
                   onChange={(e) => setFormDeadline(e.target.value)}
                   onClick={(e) => e.target.showPicker?.()}
-                  className="w-full p-2.5 bg-black border border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-white cursor-pointer"
+                  className="w-full p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white cursor-pointer"
                 />
               </div>
 
               {/* Điểm 1-10 */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Điểm độ khó <span className="text-gray-600 text-xs">(1 = dễ, 10 = khó)</span></label>
+                <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">Điểm độ khó <span className="text-gray-500 text-xs">(1 = dễ, 10 = khó)</span></label>
                 <div className="flex gap-2 flex-wrap">
                   {[1,2,3,4,5,6,7,8,9,10].map((n) => (
                     <button
@@ -2619,9 +3909,9 @@ export default function ProjectDetailPage() {
                       onClick={() => setFormScore(formScore === String(n) ? "" : String(n))}
                       className={`w-9 h-9 rounded-xl border text-sm font-medium transition
                         ${formScore === String(n)
-                          ? n <= 3 ? "border-green-500 bg-green-600/20 text-green-400"
-                            : n <= 6 ? "border-yellow-500 bg-yellow-600/20 text-yellow-400"
-                            : "border-red-500 bg-red-600/20 text-red-400"
+                          ? n <= 3 ? "border-green-500 bg-green-600/20 text-green-600 dark:text-green-400"
+                            : n <= 6 ? "border-yellow-500 bg-yellow-600/20 text-yellow-600 dark:text-yellow-400"
+                            : "border-red-500 bg-red-600/20 text-red-600 dark:text-red-400"
                           : "border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-400 hover:border-gray-500"}`}
                     >
                       {n}
@@ -2632,24 +3922,24 @@ export default function ProjectDetailPage() {
 
               {/* Số lỗi kiểm thử */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">
+                <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">
                   Số lỗi kiểm thử tồn đọng
-                  <span className="text-gray-600 text-xs ml-1">(hiện trên thẻ nếu &gt; 0)</span>
+                  <span className="text-gray-500 text-xs ml-1">(hiện trên thẻ nếu &gt; 0)</span>
                 </label>
                 <input
                   type="number" min={0}
                   value={formBugCount}
                   onChange={(e) => setFormBugCount(e.target.value)}
                   placeholder="0"
-                  className="w-32 p-2.5 bg-black border border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-white"
+                  className="w-32 p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white"
                 />
               </div>
 
               {/* Người thực hiện */}
               <div>
-                <label className="text-sm text-gray-400 block mb-1">Người thực hiện</label>
+                <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">Người thực hiện</label>
                 {team.length === 0
-                  ? <p className="text-xs text-gray-600 italic">Chưa có thành viên nào.</p>
+                  ? <p className="text-xs text-gray-500 italic">Chưa có thành viên nào.</p>
                   : (
                     <div className="flex flex-wrap gap-2">
                       {team.map((m) => {
@@ -2660,7 +3950,7 @@ export default function ProjectDetailPage() {
                             onClick={() => setFormAssignee(selected ? "" : m.id)}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm transition
                               ${selected
-                                ? "border-blue-500 bg-blue-600/20 text-white"
+                                ? "border-blue-500 bg-blue-600/20 text-blue-700 dark:text-white"
                                 : "border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-400 hover:border-gray-500"}`}
                           >
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
@@ -2681,14 +3971,14 @@ export default function ProjectDetailPage() {
             <div className="flex justify-between items-center px-5 pb-5">
               <button
                 onClick={() => { openAI({ name: formName || "công việc này", bugCount: parseInt(formBugCount) || 0 }); setModal(false); }}
-                className="flex items-center gap-2 px-3 py-2 bg-indigo-700/30 hover:bg-indigo-700/50 border border-indigo-600/50 rounded-xl text-xs text-indigo-300 transition"
+                className="flex items-center gap-2 px-3 py-2 bg-indigo-700/30 hover:bg-indigo-700/50 border border-indigo-600/50 rounded-xl text-xs text-indigo-700 dark:text-indigo-300 transition"
               >
                 ✨ Nhờ Trợ lý AI hỗ trợ
               </button>
 
               <div className="flex gap-2">
-                <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-400 hover:text-white">Hủy</button>
-                <button onClick={saveTask} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold">
+                <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition">Hủy</button>
+                <button onClick={saveTask} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white">
                   {editTask?.id ? "Lưu thay đổi" : "Tạo công việc"}
                 </button>
               </div>
@@ -2715,6 +4005,41 @@ export default function ProjectDetailPage() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/>
           </svg>
         </button>
+      )}
+
+      {/* Toast thông báo AI Auto-Workflow */}
+      {toastMessage && (
+        <div className="fixed bottom-24 left-6 z-[200] max-w-sm p-4 bg-gradient-to-r from-blue-900 to-indigo-950 border border-blue-500 rounded-2xl shadow-2xl text-white animate-bounce-short flex items-start gap-3">
+          <div className="text-2xl mt-0.5 animate-pulse">🤖</div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">AI Auto-Workflow</h4>
+            <p className="text-xs leading-relaxed whitespace-pre-line text-gray-200 font-medium">{toastMessage}</p>
+          </div>
+          <button onClick={() => setToastMessage(null)} className="text-gray-400 hover:text-white text-xs transition ml-2">✕</button>
+        </div>
+      )}
+
+      {/* ── CUSTOM AI ALERT DIALOG ── */}
+      {aiAlert && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] animate-fadeIn p-4">
+          <div className="bg-white dark:bg-[#0b0f1a] border border-blue-200 dark:border-blue-900/50 rounded-3xl w-full max-w-[420px] shadow-2xl p-6 text-center space-y-4 animate-cardIn">
+            <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center text-3xl mx-auto border border-blue-500/20 animate-bounce-short">
+              {aiAlert.icon}
+            </div>
+            <div className="space-y-1.5 text-center">
+              <h3 className="text-base font-bold text-gray-900 dark:text-white">{aiAlert.title}</h3>
+              <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{aiAlert.message}</p>
+            </div>
+            <div className="pt-2">
+              <button 
+                onClick={() => setAiAlert(null)}
+                className="w-full py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/20 active:scale-[0.98] outline-none"
+              >
+                Xác nhận
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

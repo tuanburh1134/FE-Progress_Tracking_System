@@ -103,7 +103,7 @@ export default function Dashboard() {
         )}
 
         {/* Stats */}
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
           {loading ? (
             <>
               <StatCardSkeleton />
@@ -134,7 +134,7 @@ export default function Dashboard() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           {loading ? (
             <>
               <ChartSkeleton className="col-span-2" />

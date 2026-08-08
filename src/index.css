@@ -71,3 +71,31 @@ html.dark body {
 .animate-pulse-border {
   animation: pulseBorder 1.6s ease-in-out infinite;
 }
+
+@keyframes bounceShort {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.animate-bounce-short {
+  animation: bounceShort 0.6s ease-out 1;
+}
+
+/* ── Ẩn scrollbar nhưng vẫn cuộn được ── */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE */
+  scrollbar-width: none;     /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;             /* Chrome/Safari */
+}
+
+/* ── Kanban mobile horizontal scroll ── */
+.kanban-board {
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+}
