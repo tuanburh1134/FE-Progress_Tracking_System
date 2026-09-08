@@ -12,6 +12,8 @@ export const ENDPOINTS = {
   AUTH: {
     LOGIN: '/auth/login',
     REGISTER: '/auth/register',
+    GOOGLE: '/auth/google',
+    SEND_OTP: '/auth/send-otp',
     REFRESH: '/auth/refresh',
     LOGOUT: '/auth/logout',
     ME: '/auth/me',
@@ -105,5 +107,18 @@ export const ENDPOINTS = {
     UNREAD_COUNT: '/notifications/unread-count',
     MARK_READ: (id: number) => `/notifications/${id}/read`,
     MARK_ALL_READ: '/notifications/read-all',
+  },
+
+  // -------------------------------------------------------------------------
+  // Teams
+  // -------------------------------------------------------------------------
+  TEAMS: {
+    LIST: '/teams',
+    CREATE: '/teams',
+    MEMBERS: (teamId: number) => `/teams/${teamId}/members`,
+    INVITE: (teamId: number) => `/teams/${teamId}/invite`,
+    PENDING_INVITATIONS: '/teams/invitations/pending',
+    ACCEPT_INVITATION: (teamMemberId: number) => `/teams/invitations/${teamMemberId}/accept`,
+    DECLINE_INVITATION: (teamMemberId: number) => `/teams/invitations/${teamMemberId}/decline`,
   },
 } as const

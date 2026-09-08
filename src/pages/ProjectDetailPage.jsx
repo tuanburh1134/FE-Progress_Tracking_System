@@ -168,7 +168,7 @@ const isSameMember = (m1, m2) => {
 /* ═══════════════════════════════════════
    TASK CARD CONTENT
 ═══════════════════════════════════════ */
-function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, onAISwap, dragHandleProps }) {
+function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, onAISwap, dragHandleProps, isManager }) {
   const [menu, setMenu] = useState(false);
   const [editScore, setEditScore] = useState(false);
   const [scoreInput, setScoreInput] = useState(task.score ?? "");
@@ -234,13 +234,13 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
       {/* Cảnh báo trạng thái */}
       {isOverdueTask && (
         <div className="flex items-center gap-1 mb-2 px-2 py-1 bg-red-500/15 border border-red-500/40 rounded-lg">
-          <span className="text-red-400 text-[10px] font-bold animate-pulse">❌ ĐÃ TRỄ HẠN</span>
+          <span className="text-red-400 text-[10px] font-bold animate-pulse">ĐÃ TRỄ HẠN</span>
         </div>
       )}
 
       {isUrgent && (
         <div className="flex items-center gap-1 mb-2 px-2 py-1 bg-amber-500/15 border border-amber-500/40 rounded-lg">
-          <span className="text-amber-600 dark:text-amber-400 text-[10px] font-bold animate-pulse">⏳ Sắp hết hạn (Còn &lt; 1 ngày)</span>
+          <span className="text-amber-600 dark:text-amber-400 text-[10px] font-bold animate-pulse">Sắp hết hạn (Còn &lt; 1 ngày)</span>
         </div>
       )}
 
@@ -258,32 +258,37 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
 
           {menu && (
             <div className="absolute right-0 mt-1 bg-white dark:bg-[#111827] border border-gray-200 dark:border-gray-700 text-xs rounded-xl overflow-hidden z-50 shadow-lg w-32">
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit?.(task); setMenu(false); }}
-                className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300"
-              >
-                Chỉnh sửa
-              </button>
+              {isManager && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onEdit?.(task); setMenu(false); }}
+                  className="block w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium"
+                >
+                  Chỉnh sửa
+                </button>
+              )}
               <button
                 onClick={(e) => { e.stopPropagation(); onOpenAI?.(task); setMenu(false); }}
                 className="block w-full text-left px-4 py-2 hover:bg-blue-50 dark:hover:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
               >
                 Nhờ AI hỗ trợ
               </button>
-              {task.status !== "done" && isSameMember(task.assignee, currentUser) && (
+              {task.status !== "done" && (
                 <button
                   onClick={(e) => { e.stopPropagation(); onAISwap?.(task); setMenu(false); }}
-                  className="block w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-yellow-400 font-medium border-t border-gray-100 dark:border-gray-800"
+                  className="block w-full text-left px-4 py-2 hover:bg-amber-50 dark:hover:bg-amber-900/20 text-amber-600 dark:text-yellow-400 font-medium border-t border-gray-100 dark:border-gray-800 flex items-center justify-between"
                 >
-                  🔄 Nhờ AI đổi việc
+                  <span>Nhờ AI đổi việc</span>
+                  <span className="text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20">Task khó</span>
                 </button>
               )}
-              <button
-                onClick={(e) => { e.stopPropagation(); onDelete?.(task); setMenu(false); }}
-                className="block w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400"
-              >
-                Xóa
-              </button>
+              {isManager && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onDelete?.(task); setMenu(false); }}
+                  className="block w-full text-left px-4 py-2 hover:bg-red-50 dark:hover:bg-red-950/20 text-red-600 dark:text-red-400 font-medium"
+                >
+                  Xóa
+                </button>
+              )}
             </div>
           )}
         </div>
@@ -293,11 +298,16 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
       <div className="flex items-center gap-2">
         {/* Điểm độ khó */}
         <div
-          onClick={(e) => { e.stopPropagation(); setEditScore(true); setScoreInput(task.score ?? ""); }}
+          onClick={(e) => {
+            e.stopPropagation();
+            if (!isManager) return;
+            setEditScore(true);
+            setScoreInput(task.score ?? "");
+          }}
           className="flex-shrink-0"
-          title="Điểm độ khó (1-10)"
+          title={isManager ? "Điểm độ khó (1-10)" : "Điểm độ khó (Chỉ Trưởng nhóm/Quản lý mới có quyền chỉnh)"}
         >
-          {editScore ? (
+          {editScore && isManager ? (
             <input
               autoFocus
               type="number" min={1} max={10}
@@ -310,8 +320,8 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
             />
           ) : (
             <span
-              className={`inline-flex items-center justify-center w-10 h-6 text-xs font-bold border rounded-lg cursor-pointer transition ${scoreBorderColor}`}
-              title="Bấm để chỉnh điểm"
+              className={`inline-flex items-center justify-center w-10 h-6 text-xs font-bold border rounded-lg transition ${scoreBorderColor} ${!isManager ? "cursor-default" : "cursor-pointer"}`}
+              title={isManager ? "Bấm để chỉnh điểm" : "Điểm độ khó"}
             >
               {task.score != null ? task.score : "—"}
             </span>
@@ -321,7 +331,7 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
         {/* Nhãn lỗi kiểm thử */}
         {task.bugCount > 0 && (
           <span className="inline-flex items-center gap-1 px-2 h-6 text-[10px] font-bold border border-red-600 text-red-500 dark:text-red-400 bg-red-500/10 dark:bg-red-900/20 rounded-lg flex-shrink-0">
-            🐛 {task.bugCount} lỗi
+            {task.bugCount} lỗi
           </span>
         )}
 
@@ -332,11 +342,17 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
             return (
               <button
                 key={m.id}
-                onClick={(e) => { e.stopPropagation(); onChangeAssignee?.(task, m); }}
-                title={m.name}
+                disabled={!isManager}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (!isManager) return;
+                  onChangeAssignee?.(task, m);
+                }}
+                title={isManager ? m.name : `${m.name} (Chỉ Trưởng nhóm/Quản lý mới được phân công)`}
                 className={`w-6 h-6 rounded-full text-[10px] flex items-center justify-center border transition
+                  ${!isManager ? "cursor-default opacity-85" : ""}
                   ${active
-                    ? "bg-blue-600 border-blue-400 text-white ring-1 ring-blue-400"
+                    ? "bg-blue-600 border-blue-400 text-white ring-1 ring-blue-400 font-bold"
                     : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-gray-600 dark:text-gray-400 hover:border-gray-500"}`}
               >
                 {m.name.charAt(0)}
@@ -346,17 +362,29 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
         </div>
       </div>
 
-      {/* Row 3: tên người được giao + deadline */}
-      <div className="flex items-center justify-between mt-1.5">
+      {/* Row 3: tên người được giao + deadline + nút AI Đổi việc */}
+      <div className="flex items-center justify-between mt-2 pt-1 border-t border-gray-200/40 dark:border-gray-800/40">
         {task.assignee
-          ? <p className={`text-[10px] ${subtextColor}`}>Giao cho: <span className="font-semibold">{task.assignee.name}</span></p>
+          ? <p className={`text-[10px] ${subtextColor}`}>Giao: <span className="font-semibold">{task.assignee.name}</span></p>
           : <span />
         }
-        {task.deadline && (
-          <span className={`text-[10px] font-mono ${isOverdueTask ? "text-red-400 font-bold" : subtextColor}`}>
-            {task.deadline}
-          </span>
-        )}
+
+        <div className="flex items-center gap-1.5">
+          {task.status !== "done" && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onAISwap?.(task); }}
+              className="text-[10px] px-1.5 py-0.5 rounded-lg bg-amber-500/10 hover:bg-amber-500/25 text-amber-700 dark:text-yellow-400 font-bold border border-amber-500/30 transition flex items-center gap-1"
+              title="Task quá khó? Bấm để nhờ AI tự động tìm thành viên nhẹ tải và hoán đổi công việc"
+            >
+              <span>AI Đổi</span>
+            </button>
+          )}
+          {task.deadline && (
+            <span className={`text-[10px] font-mono ${isOverdueTask ? "text-red-400 font-bold" : subtextColor}`}>
+              {task.deadline}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -365,7 +393,7 @@ function TaskCardContent({ task, team, onEdit, onDelete, onChangeAssignee, onCha
 /* ═══════════════════════════════════════
    TASK CARD — sortable wrapper
 ═══════════════════════════════════════ */
-function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, onAISwap }) {
+function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScore, onOpenAI, onAISwap, isManager }) {
   const { setNodeRef, attributes, listeners, transform, transition, isDragging } = useSortable({ id: task.id });
 
   return (
@@ -385,6 +413,7 @@ function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScor
         onOpenAI={onOpenAI}
         onAISwap={onAISwap}
         dragHandleProps={{ ...attributes, ...listeners }}
+        isManager={isManager}
       />
     </div>
   );
@@ -393,7 +422,7 @@ function TaskCard({ task, team, onEdit, onDelete, onChangeAssignee, onChangeScor
 /* ═══════════════════════════════════════
    COLUMN
 ═══════════════════════════════════════ */
-function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team, onEditTask, onDeleteTask, onChangeAssignee, onChangeScore, onOpenAI, onAISwap }) {
+function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team, onEditTask, onDeleteTask, onChangeAssignee, onChangeScore, onOpenAI, onAISwap, isManager }) {
   const { setNodeRef } = useDroppable({ id: column.id });
   const [edit, setEdit] = useState(false);
   const [title, setTitle] = useState(column.name);
@@ -407,46 +436,35 @@ function Column({ column, tasks, onAddTask, onRenameColumn, onDeleteColumn, team
       onMouseLeave={() => setHover(false)}
       className="w-[260px] sm:w-[280px] flex-shrink-0"
     >
-      <div className="p-3 bg-gray-50 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 rounded-2xl min-h-[420px] flex flex-col">
+      <div className="p-3 bg-gray-50 dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-800 rounded-2xl min-h-[420px] max-h-[calc(100vh-260px)] flex flex-col">
         {/* Header */}
-        <div className="mb-3 flex justify-between items-center">
-          {edit ? (
-            <input
-              value={title} autoFocus
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={() => { setEdit(false); onRenameColumn(column.id, title); }}
-              className="bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-700 px-2 py-1 rounded-lg w-full text-sm outline-none"
-            />
-          ) : (
-            <h2 onDoubleClick={() => setEdit(true)} className="font-bold text-sm cursor-pointer">{column.name}</h2>
-          )}
-          <div className="relative ml-2">
-            <button onClick={(e) => { e.stopPropagation(); setMenu(!menu); }} className="text-gray-500 hover:text-white px-1">⋯</button>
-            {menu && (
-              <div className="absolute right-0 mt-1 bg-[#111827] border border-gray-700 text-xs rounded-xl overflow-hidden z-50">
-                <button onClick={() => { onDeleteColumn(column.id); setMenu(false); }} className="block px-4 py-2 hover:bg-red-700 text-red-400">Xóa cột</button>
-              </div>
-            )}
-          </div>
+        <div className="mb-3 flex justify-between items-center px-1 flex-shrink-0">
+          <h2 className="font-bold text-sm select-none text-gray-800 dark:text-gray-100">{column.name}</h2>
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-200 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+            {tasks.length}
+          </span>
         </div>
 
-        {/* Tasks */}
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} team={team}
-              onEdit={onEditTask} onDelete={onDeleteTask}
-              onChangeAssignee={onChangeAssignee}
-              onChangeScore={onChangeScore}
-              onOpenAI={onOpenAI}
-              onAISwap={onAISwap}
-            />
-          ))}
-        </SortableContext>
+        {/* Tasks - Cuộn trang theo chiều dọc cho từng cột */}
+        <div className="flex-1 overflow-y-auto pr-1 space-y-2 scrollbar-thin">
+          <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+            {tasks.map((task) => (
+              <TaskCard key={task.id} task={task} team={team}
+                onEdit={onEditTask} onDelete={onDeleteTask}
+                onChangeAssignee={onChangeAssignee}
+                onChangeScore={onChangeScore}
+                onOpenAI={onOpenAI}
+                onAISwap={onAISwap}
+                isManager={isManager}
+              />
+            ))}
+          </SortableContext>
+        </div>
 
-        {hover && (
+        {hover && isManager && (
           <button
             onClick={() => onAddTask(column.id)}
-            className="mt-3 text-sm text-gray-400 hover:text-white text-left py-1 px-2 rounded-lg hover:bg-gray-800/50 transition"
+            className="mt-3 text-sm text-gray-400 hover:text-white text-left py-1 px-2 rounded-lg hover:bg-gray-800/50 transition flex-shrink-0"
           >
             + Tạo công việc
           </button>
@@ -488,7 +506,7 @@ const TABS = [
 /* ═══════════════════════════════════════
    AI HUB TAB
 ═══════════════════════════════════════ */
-function AIHubTab({ tasks, team, saveTasks, projectId, projectName }) {
+function AIHubTab({ tasks, team, saveTasks, projectId, projectName, initialSwapTask }) {
   const bottomRef = useRef(null);
 
   /* ── Git state: khai báo sớm để projectDetailedContext useMemo có thể dùng ── */
@@ -602,6 +620,65 @@ ${selectedGitFiles.length > 0 ? `\n[MÃ NGUỒN CÁC FILE LIÊN KẾT TỪ GIT (
   const [reassignProposal,setReassignProposal]= useState(null);
   /** Lưu lịch sử hội thoại để gửi cho Gemini (tiết kiệm token: chỉ 4 tin nhắn cuối) */
   const chatHistory = useRef([]);
+
+  /* ────────────────────────────────
+     Kịch bản 2: Không thể hoàn thành — Đề xuất hoán đổi
+  ──────────────────────────────── */
+  const handleCannotFinish = (targetTask = null) => {
+    const task = targetTask || tasks.find((t) => t.id === selectedTask);
+    if (!task) {
+      setMessages((p) => [...p, { from: "user", type: "text", text: "Tôi không thể hoàn thành tác vụ này đúng hạn." }]);
+      setMessages((p) => [...p, { from: "ai", type: "text", text: "Vui lòng chọn công việc cụ thể ở ô bên dưới trước khi gửi yêu cầu này để tôi có thể tìm người phù hợp hỗ trợ bạn." }]);
+      return;
+    }
+
+    setMessages((p) => [...p, {
+      from: "user", type: "text",
+      text: `Tôi thấy công việc “${task.name}” quá khó hoặc không đủ thời gian hoàn thành. Nhờ AI tư vấn hoán đổi việc.`,
+    }]);
+
+    /* Tìm thành viên nhẹ tải nhất (nhất ít task chưa done) */
+    setTyping(true);
+    setTimeout(() => {
+      setTyping(false);
+      const currentAssignee = task.assignee;
+      const candidates = team.filter((m) => String(m.id) !== String(currentAssignee?.id));
+
+      const memberPool = candidates.length > 0 ? candidates : team;
+
+      /* Đếm số task chưa done của mỗi thành viên */
+      const workload = memberPool.map((m) => ({
+        member: m,
+        count: tasks.filter((t) => String(t.assignee?.id) === String(m.id) && t.status !== "done").length,
+      }));
+      workload.sort((a, b) => a.count - b.count);
+      const best = workload[0] || { member: team[0] || { name: "Thành viên nhóm" }, count: 0 };
+
+      /* Tìm task nhẹ nhất của người đó để hoán đổi ngược lại */
+      const swapTask = tasks.find(
+        (t) => String(t.assignee?.id) === String(best.member.id) && t.status !== "done" && t.id !== task.id
+      );
+
+      setReassignProposal({
+        fromTask: task,
+        toMember: best.member,
+        swapTask: swapTask || null,
+        fromMember: currentAssignee,
+      });
+
+      setMessages((p) => [...p, {
+        from: "ai", type: "text",
+        text: `Tôi đã quét dữ liệu ${team.length} thành viên trong nhóm. **${best.member.name}** đang có khối lượng công việc nhẹ nhất (${best.count} tasks). Dưới đây là đề xuất hoán đổi công việc tự động:`,
+      }]);
+    }, 1200);
+  };
+
+  useEffect(() => {
+    if (initialSwapTask) {
+      setSelectedTask(initialSwapTask.id);
+      handleCannotFinish(initialSwapTask);
+    }
+  }, [initialSwapTask]);
 
   useEffect(() => {
     const githubInfo = parseGithubUrl(gitUrl);
@@ -764,63 +841,7 @@ public void process(String input) {
     }, 1800);
   };
 
-  /* ────────────────────────────────
-     Kịch bản 2: Không thể hoàn thành — Đề xuất hoán đổi
-  ──────────────────────────────── */
-  const handleCannotFinish = () => {
-    const task = tasks.find((t) => t.id === selectedTask);
-    if (!task) {
-      setMessages((p) => [...p, { from: "user", type: "text", text: "Tôi không thể hoàn thành tác vụ này đúng hạn." }]);
-      pushAI({ type: "text", text: "Vui lòng chọn công việc cụ thể ở ô bên dưới trước khi gửi yêu cầu này để tôi có thể tìm người phù hợp hỗ trợ bạn." });
-      return;
-    }
 
-    setMessages((p) => [...p, {
-      from: "user", type: "text",
-      text: `Tôi không thể hoàn thành task “${task.name}” đúng hạn.`,
-    }]);
-
-    /* Tìm thành viên nhẹ tải nhất (nhất ít task chưa done) */
-    setTyping(true);
-    setTimeout(() => {
-      setTyping(false);
-      const currentAssignee = task.assignee;
-      const candidates = team.filter((m) => m.id !== currentAssignee?.id);
-
-      if (candidates.length === 0) {
-        setMessages((p) => [...p, {
-          from: "ai", type: "text",
-          text: "Không tìm thấy thành viên khác trong nhóm. Vui lòng thêm thành viên vào nhóm trước.",
-        }]);
-        return;
-      }
-
-      /* Đếm số task chưa done của mỗi thành viên */
-      const workload = candidates.map((m) => ({
-        member: m,
-        count: tasks.filter((t) => t.assignee?.id === m.id && t.status !== "done").length,
-      }));
-      workload.sort((a, b) => a.count - b.count);
-      const best = workload[0];
-
-      /* Tìm task nhẹ nhất của người đó để hoán đổi ngược lại */
-      const swapTask = tasks.find(
-        (t) => t.assignee?.id === best.member.id && t.status !== "done" && t.id !== task.id
-      );
-
-      setReassignProposal({
-        fromTask: task,
-        toMember: best.member,
-        swapTask: swapTask || null,
-        fromMember: currentAssignee,
-      });
-
-      setMessages((p) => [...p, {
-        from: "ai", type: "text",
-        text: `Tôi đã quét toàn bộ ${team.length} thành viên. **${best.member.name}** đang có khối lượng nhẹ nhất (${best.count} task). Xem đề xuất hoán đổi bên dưới.`,
-      }]);
-    }, 2000);
-  };
 
   /* ── Thực hiện hoán đổi ── */
   const confirmReassign = () => {
@@ -1780,6 +1801,26 @@ function CICDTab({
     const deadline = selectedCommit.relatedTask?.deadline || "Không có";
     const commitTime = selectedCommit.time;
 
+    // 🔍 Kiểm tra xem code diff có phải chỉ là comment (ví dụ //test) hay dòng thừa không
+    const addedLines = [];
+    commitDiff.forEach((f) => {
+      if (f.patch) {
+        f.patch.split("\n").forEach((line) => {
+          if (line.startsWith("+") && !line.startsWith("+++")) {
+            addedLines.push(line.slice(1).trim());
+          }
+        });
+      }
+    });
+
+    const nonCommentAddedLines = addedLines.filter((l) => {
+      if (!l) return false;
+      if (l.startsWith("//") || l.startsWith("/*") || l.startsWith("*") || l.startsWith("#") || l.startsWith("<!--")) return false;
+      return true;
+    });
+
+    const isOnlyCommentOrTrivia = addedLines.length > 0 && nonCommentAddedLines.length === 0;
+
     const userPrompt = `Đánh giá code thay đổi trong commit sau đây:
 Commit Message: "${commitMsg}"
 Task Liên Quan: "${taskName}"
@@ -1789,6 +1830,12 @@ Nội dung code diff:
 \`\`\`diff
 ${diffContent}
 \`\`\`
+
+CHÚ Ý ĐẶC BIỆT KHI ĐÁNH GIÁ:
+- Nếu code diff CHỈ chứa các dòng comment (ví dụ: //test, //, /*), dòng trống hoặc hoàn toàn KHÔNG CÓ MÃ NGUỒN LOGIC THỰC THI NÀO, bạn BẮT BUỘC phải đánh giá:
+  + Độ liên quan: Thấp
+  + Độ ổn định: Thấp
+  + Mức độ rủi ro: Cao
 
 Hãy phân tích và chấm điểm mã nguồn này theo đúng 3 tiêu chí:
 1. Độ liên quan (Relevance): Code này có đúng với chức năng của task được giao không? Có dư thừa hay bị lệch hướng không?
@@ -1837,6 +1884,21 @@ Mức độ rủi ro: [Thấp/Trung bình/Cao] | [Nhận xét chi tiết của b
         });
 
         if (parsed.relevance && parsed.stability && parsed.risk) {
+          if (isOnlyCommentOrTrivia) {
+            parsed.relevance = {
+              level: "Thấp",
+              comment: `⚠️ Cảnh báo: Commit này chỉ chứa dòng comment/ghi chú thử nghiệm (ví dụ: "${addedLines[0] || "//test"}") hoặc dòng trống, chưa hề có bất kỳ mã nguồn logic xử lý thực tế nào cho tính năng "${taskName}".`
+            };
+            parsed.stability = {
+              level: "Thấp",
+              comment: "⚠️ Phát hiện mã nguồn thay đổi chỉ mang tính chất thử nghiệm/ghi chú, chưa khai báo các câu lệnh thực thi hợp lệ."
+            };
+            parsed.risk = {
+              level: "Cao",
+              comment: `⚠️ Mức rủi ro cao: Developer mới chỉ thêm dòng comment thử nghiệm mà chưa đẩy mã nguồn thực tế cho tính năng "${taskName}". Cần kiểm tra lại tiến độ.`
+            };
+          }
+
           setAiReviewResult(parsed);
           setAiReviewing(false);
           return;
@@ -1852,8 +1914,32 @@ Mức độ rủi ro: [Thấp/Trung bình/Cao] | [Nhận xét chi tiết của b
       let relComment = "";
       const cleanedMsg = commitMsg.toLowerCase();
       const cleanedTask = taskName.toLowerCase();
-      
-      if (taskName === "Không rõ") {
+
+      // 🔍 PHÂN TÍCH CHUYÊN SÂU NỘI DUNG CODE DIFF THỰC TẾ
+      const addedLines = [];
+      commitDiff.forEach((f) => {
+        if (f.patch) {
+          f.patch.split("\n").forEach((line) => {
+            if (line.startsWith("+") && !line.startsWith("+++")) {
+              addedLines.push(line.slice(1).trim());
+            }
+          });
+        }
+      });
+
+      // Lọc các dòng code mới thực sự có logic (bỏ qua dòng comment //, /*, #, dòng trống, hoặc //test)
+      const nonCommentAddedLines = addedLines.filter((l) => {
+        if (!l) return false;
+        if (l.startsWith("//") || l.startsWith("/*") || l.startsWith("*") || l.startsWith("#") || l.startsWith("<!--")) return false;
+        return true;
+      });
+
+      const isOnlyCommentOrTrivia = addedLines.length > 0 && nonCommentAddedLines.length === 0;
+
+      if (isOnlyCommentOrTrivia) {
+        relLevel = "Thấp";
+        relComment = `⚠️ Cảnh báo: Commit này chỉ chứa dòng comment/ghi chú thử nghiệm (ví dụ: "${addedLines[0] || "//test"}") hoặc dòng trống, chưa hề có bất kỳ mã nguồn logic xử lý thực tế nào cho tính năng "${taskName}".`;
+      } else if (taskName === "Không rõ") {
         relLevel = "Trung bình";
         relComment = "Commit này không gắn kết trực tiếp với task nào trên bảng Kanban, gây khó khăn cho việc đối chiếu nghiệp vụ.";
       } else if (cleanedMsg.includes(cleanedTask) || cleanedTask.includes(cleanedMsg) || 
@@ -1866,25 +1952,31 @@ Mức độ rủi ro: [Thấp/Trung bình/Cao] | [Nhận xét chi tiết của b
         relComment = `Tên commit "${commitMsg}" và code thay đổi có sự sai lệch nhất định so với mô tả task được giao "${taskName}". Trưởng nhóm nên xác nhận lại phạm vi code.`;
       }
 
-      let stabLevel = "Cao";
-      let stabComment = "Cấu trúc mã nguồn viết rất tường minh, khai báo biến sạch sẽ, sử dụng các framework helper chuẩn và không lạm dụng dòng code thừa.";
+      let stabLevel = isOnlyCommentOrTrivia ? "Thấp" : "Cao";
+      let stabComment = isOnlyCommentOrTrivia
+        ? "⚠️ Phát hiện mã nguồn thay đổi chỉ mang tính chất thử nghiệm/ghi chú, chưa khai báo các câu lệnh thực thi hợp lệ."
+        : "Cấu trúc mã nguồn viết rất tường minh, khai báo biến sạch sẽ, sử dụng các framework helper chuẩn và không lạm dụng dòng code thừa.";
       
       const totalAdditions = commitDiff.reduce((sum, f) => sum + f.additions, 0);
-      if (totalAdditions > 30) {
-        stabLevel = "Trung bình";
-        stabComment = "Phát hiện mã nguồn thay đổi tương đối dài. Nên xem xét tách bớt các phương thức hoặc cấu trúc helper để nâng cao tính tái sử dụng.";
-      } else if (totalAdditions > 80) {
-        stabLevel = "Thấp";
-        stabComment = "Mã nguồn quá phức tạp và dài dòng trong một commit đơn lẻ. Tiềm ẩn nguy cơ rối loạn logic điều khiển và khó bảo trì lâu dài.";
+      if (!isOnlyCommentOrTrivia) {
+        if (totalAdditions > 30) {
+          stabLevel = "Trung bình";
+          stabComment = "Phát hiện mã nguồn thay đổi tương đối dài. Nên xem xét tách bớt các phương thức hoặc cấu trúc helper để nâng cao tính tái sử dụng.";
+        } else if (totalAdditions > 80) {
+          stabLevel = "Thấp";
+          stabComment = "Mã nguồn quá phức tạp và dài dòng trong một commit đơn lẻ. Tiềm ẩn nguy cơ rối loạn logic điều khiển và khó bảo trì lâu dài.";
+        }
       }
 
-      let riskLevel = "Thấp";
-      let riskComment = "Commit được đẩy lên sớm so với deadline đề ra. Các test cases tích hợp CI/CD đều vượt qua ổn định.";
+      let riskLevel = isOnlyCommentOrTrivia ? "Cao" : "Thấp";
+      let riskComment = isOnlyCommentOrTrivia
+        ? `⚠️ Mức rủi ro cao: Developer mới chỉ thêm dòng comment thử nghiệm mà chưa đẩy mã nguồn thực tế cho tính năng "${taskName}". Cần kiểm tra lại tiến độ.`
+        : "Commit được đẩy lên sớm so với deadline đề ra. Các test cases tích hợp CI/CD đều vượt qua ổn định.";
 
       if (!isDone) {
         riskLevel = "Cao";
         riskComment = "Pipeline build CI/CD của commit này bị THẤT BẠI! Cần kiểm tra ngay log biên dịch để khắc phục lỗi cú pháp hoặc logic.";
-      } else if (deadline !== "Không có") {
+      } else if (!isOnlyCommentOrTrivia && deadline !== "Không có") {
         const todayStr = new Date().toISOString().split("T")[0];
         if (todayStr > deadline) {
           riskLevel = "Cao";
@@ -2378,7 +2470,7 @@ function TabPlaceholder({ label }) {
 /* ═══════════════════════════════════════
    MEMBERS TAB
 ═══════════════════════════════════════ */
-function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
+function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader, fetchProjectAndMembers }) {
   const [emailQuery,          setEmailQuery]          = useState("");
   const [results,             setResults]             = useState([]);
   const [searching,           setSearching]           = useState(false);
@@ -2388,6 +2480,28 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
   const [inviting,            setInviting]            = useState(null);
 
   const [selectedMember, setSelectedMember] = useState(null);
+  const [updatingRoleId, setUpdatingRoleId] = useState(null);
+
+  const handleToggleRole = async (member) => {
+    const currentRole = member.projectRole || "MEMBER";
+    const targetRole = currentRole === "MANAGER" ? "MEMBER" : "MANAGER";
+    
+    setUpdatingRoleId(member.id);
+    try {
+      const { default: apiClient } = await import("../services/api");
+      await apiClient.put(`/projects/${projectId}/members/${member.id}/role`, null, {
+        params: { role: targetRole }
+      });
+      showToast(`Đã ${targetRole === "MANAGER" ? "nâng quyền Reviewer / Quản lý" : "hạ quyền về Thành viên"} cho ${member.name}!`);
+      if (fetchProjectAndMembers) {
+        await fetchProjectAndMembers();
+      }
+    } catch (err) {
+      showToast(err.response?.data?.message || "Cập nhật quyền thất bại.", "error");
+    } finally {
+      setUpdatingRoleId(null);
+    }
+  };
 
   const handleMemberClick = (member) => {
     if (!isLeader && !isOwner) {
@@ -2449,12 +2563,11 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
           params: { email: emailQuery.trim(), size: 5 },
         });
         const data = res.data?.data ?? [];
-        // Loại bỏ những người đã là thành viên
         const filtered = data.filter(
           (u) => !team.some((m) => String(m.id) === String(u.id))
         );
         setResults(filtered);
-        setShowDrop(true); // luôn show — kể cả khi rỗng (hiển "không tìm thấy")
+        setShowDrop(true);
       } catch {
         setResults([]);
         setApiError(true);
@@ -2468,7 +2581,6 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
     return () => clearTimeout(debRef.current);
   }, [emailQuery, team]);
 
-
   /* Click ngoài đóng dropdown */
   useEffect(() => {
     const h = (e) => { if (dropRef.current && !dropRef.current.contains(e.target)) setShowDrop(false); };
@@ -2476,15 +2588,14 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
     return () => document.removeEventListener("mousedown", h);
   }, []);
 
-  /* Gửi lời mời (tạo Invitation PENDING, không thêm trực tiếp) */
+  /* Gửi lời mời */
   const handleInvite = async (user) => {
     setInviting(user.email);
     try {
       const { default: apiClient } = await import("../services/api");
       await apiClient.post(`/projects/${projectId}/members`, { email: user.email });
       setEmailQuery(""); setResults([]); setShowDrop(false);
-      showToast(`Đã gửi lời mời cho ${user.fullName || user.username}! Ang chờ xác nhận.`);
-      // Refresh pending list
+      showToast(`Đã gửi lời mời cho ${user.fullName || user.username}! Đang chờ xác nhận.`);
       await fetchPendingInvitations();
     } catch (err) {
       showToast(err.response?.data?.message || "Gửi lời mời thất bại. Vui lòng thử lại.", "error");
@@ -2520,7 +2631,6 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
     const total   = myTasks.length;
     const inProgress = myTasks.filter((t) => t.status === "doing").length;
     
-    // Thống kê chi tiết
     const overdueCount = myTasks.filter(isTaskOverdue).length;
     const onTimeCount  = myTasks.filter(isCompletedOnTime).length;
     const contributionScore = myTasks.filter(t => t.status === "done").reduce((sum, t) => sum + (parseInt(t.score) || 0), 0);
@@ -2535,7 +2645,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
       done, 
       total, 
       inProgress, 
-      overdue: overdueCount, // Giữ tên cũ hoặc gán đè
+      overdue: overdueCount,
       overdueCount,
       onTimeCount,
       contributionScore,
@@ -2553,46 +2663,34 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
 
   return (
     <div className="space-y-6 relative">
-
-      {/* TOAST */}
-      {toast && (
-        <div className={`fixed top-6 right-6 z-[300] px-5 py-3 rounded-2xl text-sm font-medium shadow-2xl animate-fadeIn flex items-center gap-2 ${
-          toast.type === "error"
-            ? "bg-red-900 border border-red-700 text-red-200"
-            : "bg-green-900 border border-green-700 text-green-200"
-        }`}>
-          {toast.type === "error" ? "✗" : "✓"} {toast.msg}
-        </div>
-      )}
-
       {/* HEADER */}
       <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-xl font-bold text-white">Thành Viên Dự Án</h2>
-          <p className="text-sm text-gray-400 mt-0.5">
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Thành Viên Dự Án</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium mt-0.5">
             {totalMembers} thành viên · {avgProgress}% tiến độ trung bình
           </p>
         </div>
       </div>
 
       {/* SUMMARY CARDS */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         {[
-          { label: "Tổng thành viên",  val: totalMembers,  color: "text-blue-400",   border: "border-blue-800/40",   bg: "bg-blue-900/10" },
-          { label: "Tasks đã hoàn thành", val: `${totalDone}/${totalTasks}`, color: "text-green-400",  border: "border-green-800/40",  bg: "bg-green-900/10" },
-          { label: "Tiến độ TB",       val: `${avgProgress}%`, color: "text-purple-400", border: "border-purple-800/40", bg: "bg-purple-900/10" },
-          { label: "Trễ hạn",          val: memberStats.reduce((s,m)=>s+m.overdue,0), color: "text-red-400", border: "border-red-800/40", bg: "bg-red-900/10" },
+          { label: "Tổng thành viên",     val: totalMembers,                          color: "text-blue-700 dark:text-blue-400",   border: "border-blue-200 dark:border-blue-800/40",   bg: "bg-blue-50/80 dark:bg-blue-900/20" },
+          { label: "Tasks đã hoàn thành", val: `${totalDone}/${totalTasks}`,         color: "text-green-700 dark:text-green-400",  border: "border-green-200 dark:border-green-800/40",  bg: "bg-green-50/80 dark:bg-green-900/20" },
+          { label: "Tiến độ TB",          val: `${avgProgress}%`,                    color: "text-purple-700 dark:text-purple-400", border: "border-purple-200 dark:border-purple-800/40", bg: "bg-purple-50/80 dark:bg-purple-900/20" },
+          { label: "Trễ hạn",             val: memberStats.reduce((s,m)=>s+m.overdue,0), color: "text-red-700 dark:text-red-400",    border: "border-red-200 dark:border-red-800/40",    bg: "bg-red-50/80 dark:bg-red-900/20" },
         ].map((c) => (
-          <div key={c.label} className={`p-4 border ${c.border} ${c.bg} rounded-2xl`}>
+          <div key={c.label} className={`p-4 border ${c.border} ${c.bg} rounded-2xl shadow-sm dark:shadow-none`}>
             <p className={`text-2xl font-black tabular-nums ${c.color}`}>{c.val}</p>
-            <p className="text-xs text-gray-500 mt-1">{c.label}</p>
+            <p className="text-xs text-gray-700 dark:text-gray-300 font-bold mt-1">{c.label}</p>
           </div>
         ))}
       </div>
 
-           {/* INVITE — chỉ owner thấy */}
+      {/* INVITE — chỉ owner thấy */}
       {isOwner && (
-        <div className="bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800 rounded-2xl p-5">
+        <div className="bg-white border border-gray-200 dark:bg-[#0b0f1a] dark:border-gray-800 rounded-2xl p-5 shadow-sm dark:shadow-none">
           <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
             <span className="text-blue-600 dark:text-blue-400 text-lg">＋</span>
             Mời Thành Viên Mới
@@ -2765,7 +2863,7 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
             <div
               key={m.id}
               onClick={() => handleMemberClick(m)}
-              className="bg-white border border-gray-200 hover:border-blue-400 dark:bg-[#0b0f1a] dark:border-gray-800 dark:hover:border-blue-500/50 rounded-2xl p-5 transition-all shadow-sm dark:shadow-none cursor-pointer hover:shadow-md hover:scale-[1.01] flex flex-col justify-between"
+              className="bg-white border border-gray-200 hover:border-blue-500 dark:bg-[#0b0f1a] dark:border-gray-800 dark:hover:border-blue-500/50 rounded-2xl p-5 transition-all shadow-sm hover:shadow-md cursor-pointer hover:scale-[1.01] flex flex-col justify-between"
               title={isLeader || isOwner ? "Xem chi tiết đóng góp & hiệu suất" : "Thành viên dự án"}
             >
               {/* Avatar + tên + badge */}
@@ -2775,23 +2873,36 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-gray-900 dark:text-white truncate">{m.name}</h3>
+                    <h3 className="font-bold text-gray-900 dark:text-white truncate">{m.name}</h3>
+                    {m.projectRole === "OWNER" ? (
+                      <span className="text-[10px] px-2 py-0.5 bg-purple-100 border border-purple-300 text-purple-700 dark:bg-purple-500/10 dark:border-purple-500/30 dark:text-purple-400 rounded-full font-bold">
+                        👑 Trưởng nhóm
+                      </span>
+                    ) : m.projectRole === "MANAGER" ? (
+                      <span className="text-[10px] px-2 py-0.5 bg-indigo-100 border border-indigo-300 text-indigo-700 dark:bg-indigo-500/10 dark:border-indigo-500/30 dark:text-indigo-400 rounded-full font-bold">
+                        ⭐ Reviewer / Quản lý
+                      </span>
+                    ) : (
+                      <span className="text-[10px] px-2 py-0.5 bg-gray-100 border border-gray-300 text-gray-700 dark:bg-gray-500/10 dark:border-gray-500/30 dark:text-gray-400 rounded-full font-bold">
+                        👤 Thành viên
+                      </span>
+                    )}
                     {m.overdue > 0 && (
-                      <span className="text-[10px] px-2 py-0.5 bg-red-50 border border-red-200 text-red-700 dark:bg-red-900/40 dark:border-red-700/50 dark:text-red-400 rounded-full font-bold">
+                      <span className="text-[10px] px-2 py-0.5 bg-red-100 border border-red-300 text-red-700 dark:bg-red-900/40 dark:border-red-700/50 dark:text-red-400 rounded-full font-bold">
                         {m.overdue} trễ hạn
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{m.email || ""}</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400 truncate mt-0.5">{m.email || ""}</p>
                   
                   {/* Contribution Badge */}
-                  <div className="inline-flex items-center gap-1 mt-1 px-2 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/30 rounded-lg text-[10px] font-bold text-blue-600 dark:text-blue-400">
+                  <div className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/30 rounded-lg text-[11px] font-bold text-blue-700 dark:text-blue-400">
                     🏆 Đóng góp: {m.contributionScore} điểm
                   </div>
                 </div>
 
                 {/* Nút xóa — chỉ owner */}
-                {isOwner && (
+                {isOwner && m.projectRole !== "OWNER" && (
                   <button
                     onClick={(e) => { e.stopPropagation(); handleRemove(m); }}
                     disabled={removing === m.id}
@@ -2812,9 +2923,9 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
               {/* Progress bar */}
               <div className="mb-4">
                 <div className="flex justify-between text-xs mb-1.5">
-                  <span className="text-gray-500 dark:text-gray-400 font-medium">Tiến độ</span>
-                  <span className={`font-bold ${
-                    m.pct >= 80 ? "text-green-600 dark:text-green-400" : m.pct >= 40 ? "text-blue-600 dark:text-blue-400" : "text-amber-600 dark:text-yellow-400"
+                  <span className="text-gray-700 dark:text-gray-300 font-bold">Tiến độ</span>
+                  <span className={`font-extrabold ${
+                    m.pct >= 80 ? "text-green-700 dark:text-green-400" : m.pct >= 40 ? "text-blue-700 dark:text-blue-400" : "text-amber-700 dark:text-yellow-400"
                   }`}>{m.pct}%</span>
                 </div>
                 <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
@@ -2828,14 +2939,14 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
               {/* Stats grid */}
               <div className="grid grid-cols-4 gap-2 text-center">
                 {[
-                  { val: m.total,      label: "Tổng",    color: "text-gray-800 dark:text-gray-300" },
-                  { val: m.done,       label: "Xong",    color: "text-green-600 dark:text-green-400" },
-                  { val: m.inProgress, label: "Đang làm", color: "text-blue-600 dark:text-blue-400" },
-                  { val: m.bugs,       label: "Lỗi",     color: m.bugs > 0 ? "text-red-600 dark:text-red-400" : "text-gray-400 dark:text-gray-600" },
+                  { val: m.total,      label: "Tổng",    color: "text-gray-900 dark:text-gray-100" },
+                  { val: m.done,       label: "Xong",    color: "text-green-700 dark:text-green-400" },
+                  { val: m.inProgress, label: "Đang làm", color: "text-blue-700 dark:text-blue-400" },
+                  { val: m.bugs,       label: "Lỗi",     color: m.bugs > 0 ? "text-red-700 dark:text-red-400" : "text-gray-500 dark:text-gray-500" },
                 ].map((s) => (
-                  <div key={s.label} className="bg-gray-50 dark:bg-black/40 border border-gray-100 dark:border-transparent rounded-xl py-2">
-                    <p className={`text-base font-bold ${s.color}`}>{s.val}</p>
-                    <p className="text-[10px] text-gray-500 dark:text-gray-600 font-medium">{s.label}</p>
+                  <div key={s.label} className="bg-gray-50 dark:bg-black/40 border border-gray-200 dark:border-gray-800 rounded-xl py-2">
+                    <p className={`text-base font-black ${s.color}`}>{s.val}</p>
+                    <p className="text-[11px] text-gray-700 dark:text-gray-300 font-bold">{s.label}</p>
                   </div>
                 ))}
               </div>
@@ -2860,6 +2971,31 @@ function MembersTab({ tasks, team, setTeam, projectId, isOwner, isLeader }) {
                       </div>
                     ))}
                   </div>
+                </div>
+              )}
+
+              {/* Nút Nâng/Hạ Quyền (chỉ Owner thấy) */}
+              {isOwner && m.projectRole !== "OWNER" && (
+                <div className="mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleToggleRole(m); }}
+                    disabled={updatingRoleId === m.id}
+                    className={`w-full py-1.5 px-3 text-xs font-bold rounded-xl transition border flex items-center justify-center gap-1.5 ${
+                      m.projectRole === "MANAGER"
+                        ? "bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                        : "bg-blue-600/10 hover:bg-blue-600/20 text-blue-600 dark:text-blue-400 border-blue-600/30"
+                    }`}
+                    title={m.projectRole === "MANAGER" ? "Hạ quyền về Thành viên" : "Cho phép check code & kéo thả bảng Kanban"}
+                  >
+                    {updatingRoleId === m.id ? (
+                      <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <span>{m.projectRole === "MANAGER" ? "⬇️" : "⬆️"}</span>
+                        <span>{m.projectRole === "MANAGER" ? "Hạ về Thành viên" : "Nâng làm Reviewer / Quản lý"}</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               )}
             </div>
@@ -3066,7 +3202,16 @@ export default function ProjectDetailPage() {
   const [newColName, setNewColName] = useState("");
 
   const [projectDetail, setProjectDetail] = useState(null);
-  const isOwner = projectDetail ? (String(projectDetail.ownerId) === String(currentUser?.id)) : true;
+  const isOwner = projectDetail ? (String(projectDetail.ownerId || projectDetail.owner?.id) === String(currentUser?.id)) : true;
+
+  const currentMemberInTeam = useMemo(() => {
+    return team.find(m => String(m.id) === String(currentUser?.id));
+  }, [team, currentUser]);
+
+  const isManager = useMemo(() => {
+    if (isOwner || currentUser?.role === "ADMIN" || currentUser?.role === "PROJECT_MANAGER") return true;
+    return currentMemberInTeam?.projectRole === "MANAGER" || currentMemberInTeam?.projectRole === "OWNER";
+  }, [isOwner, currentUser, currentMemberInTeam]);
 
   const gitUrl = useMemo(() => {
     return localStorage.getItem("project_git_" + id) || "";
@@ -3137,7 +3282,8 @@ export default function ProjectDetailPage() {
             status = "running";
           }
         } else {
-          status = idx === 1 ? "failed" : idx === 0 ? "running" : "success";
+          // Nếu không cấu hình GitHub Actions CI, tất cả commit push thành công mặc định có status "success"
+          status = "success";
         }
 
         const passTests = status === "success" ? Math.floor(Math.random() * 20) + 15 : status === "running" ? 8 : 4;
@@ -3266,49 +3412,127 @@ export default function ProjectDetailPage() {
     return rows.sort((a, b) => b.id.localeCompare(a.id));
   }, [tasks, team]);
 
-  const cleanText = useCallback((str) => {
+  const cleanTextNormalized = useCallback((str) => {
     if (!str) return "";
     return str
       .toLowerCase()
       .normalize("NFD")
       .replace(/[\u0300-\u036f]/g, "")
-      .replace(/[^a-zA-Z0-9\s]/g, "")
+      .replace(/[^a-zA-Z0-9\s]/g, " ")
+      .replace(/\s+/g, " ")
       .trim();
   }, []);
 
+  const isCommitByMember = useCallback((commit, member) => {
+    if (!commit || !member) return false;
+
+    const ghLogin = (commit.authorGithubLogin || "").toLowerCase().trim();
+    const gitEmail = (commit.authorEmail || "").toLowerCase().trim();
+    const gitAuthor = (commit.author || "").toLowerCase().trim();
+
+    const memGh = (member.githubUsername || "").toLowerCase().trim();
+    const memEmail = (member.email || "").toLowerCase().trim();
+    const memName = (member.fullName || member.name || member.username || "").toLowerCase().trim();
+
+    // 1. Khớp theo GitHub Username
+    if (memGh && ghLogin && memGh === ghLogin) return true;
+
+    // 2. Khớp theo Email
+    if (memEmail && gitEmail && memEmail === gitEmail) return true;
+
+    // 3. Khớp theo Họ tên / Username
+    if (memName && (gitAuthor === memName || (memGh && gitAuthor === memGh))) return true;
+
+    return false;
+  }, []);
+
   const isCommitMatchingTask = useCallback((commitMsg, taskName) => {
-    let msg = cleanText(commitMsg);
-    let task = cleanText(taskName);
-    if (!msg || !task) return false;
-    msg = msg.replace(/^(feat|fix|chore|refactor|test|docs|style|build|ci)\s+/, "");
-    return msg.includes(task) || task.includes(msg);
-  }, [cleanText]);
+    if (!commitMsg || !taskName) return false;
+
+    let msgClean = cleanTextNormalized(commitMsg);
+    let taskClean = cleanTextNormalized(taskName);
+
+    if (!msgClean || !taskClean) return false;
+
+    // Chặn các commit chung chung không liên quan đến chức năng cụ thể
+    const genericCommits = [
+      "first commit", "initial commit", "init", "commit", "update", "wip", "test", "demo",
+      "feat first commit", "fix first commit", "chore first commit"
+    ];
+    if (genericCommits.some((g) => msgClean === g || msgClean.includes("first commit") || msgClean === `feat ${g}`)) {
+      return false;
+    }
+
+    // Loại bỏ tiền tố commit chuẩn
+    msgClean = msgClean.replace(/^(feat|fix|chore|refactor|test|docs|style|build|ci)\s*[:\s]*/i, "").trim();
+
+    // 1. Kiểm tra danh sách các CỤM TỪ KHÓA TÍNH NĂNG (Feature Topic Phrases) chính xác
+    const FEATURE_PHRASES = [
+      { key: "trang chu", syns: ["home", "homepage", "dashboard"] },
+      { key: "trang ca nhan", syns: ["profile", "ca nhan", "personal"] },
+      { key: "dang nhap", syns: ["login", "signin", "log in", "sign in", "auth"] },
+      { key: "dang ky", syns: ["register", "signup", "sign up"] },
+      { key: "nguoi dung", syns: ["user", "account"] },
+      { key: "ban hang", syns: ["shop", "sales"] },
+      { key: "mua hang", syns: ["cart", "checkout", "buy"] },
+      { key: "hang hoa", syns: ["product", "goods", "item"] },
+    ];
+
+    // Nếu task thuộc một Feature Topic cụ thể (ví dụ "trang ca nhan"), commit BẮT BUỘC phải thuộc đúng Feature Topic đó!
+    for (const f of FEATURE_PHRASES) {
+      const isTaskInFeature = taskClean.includes(f.key) || f.syns.some((s) => taskClean.includes(s));
+      const isMsgInFeature = msgClean.includes(f.key) || f.syns.some((s) => msgClean.includes(s));
+
+      if (isTaskInFeature) {
+        return isMsgInFeature;
+      }
+    }
+
+    // 2. Nếu không thuộc các feature phrases đặc biệt trên:
+    // Chuẩn hóa từ dừng (Stop Words - bao gồm từ "trang", "giao", "dien" để tránh bị khớp nhầm)
+    const STOP_WORDS = new Set([
+      "them", "tao", "chuc", "nang", "giao", "dien", "cho", "cua", "va", "voi", "bang", "trang",
+      "feat", "fix", "chore", "refactor", "test", "docs", "style", "build", "ci", "update", "add"
+    ]);
+
+    // Chuỗi con trực tiếp nếu đủ độ dài ý nghĩa (từ 4 ký tự trở lên)
+    if (msgClean.length >= 4 && taskClean.includes(msgClean)) return true;
+    if (taskClean.length >= 4 && msgClean.includes(taskClean)) return true;
+
+    // Phân tích từ khóa nòng cốt
+    const taskWords = taskClean.split(" ").filter((w) => w.length >= 2 && !STOP_WORDS.has(w));
+    const msgWords = msgClean.split(" ").filter((w) => w.length >= 2 && !STOP_WORDS.has(w));
+
+    if (taskWords.length === 0 || msgWords.length === 0) return false;
+
+    let matchCount = 0;
+    for (let tw of taskWords) {
+      if (msgWords.includes(tw)) {
+        matchCount++;
+      }
+    }
+
+    return matchCount > 0;
+  }, [cleanTextNormalized]);
 
   const activeCommits = useMemo(() => {
     const list = githubCommits.length > 0 ? githubCommits : commitHistory;
-    return list.map(c => {
+    return list.map((c) => {
       if (c.relatedTask) return c;
 
-      const matchedMember = team.find(m => 
-        (m.fullName && c.author && m.fullName.toLowerCase() === c.author.toLowerCase()) ||
-        (m.name && c.author && m.name.toLowerCase() === c.author.toLowerCase()) ||
-        (m.username && c.authorGithubLogin && m.username.toLowerCase() === c.authorGithubLogin.toLowerCase()) ||
-        (m.githubUsername && c.authorGithubLogin && m.githubUsername.toLowerCase() === c.authorGithubLogin.toLowerCase())
-      );
-
+      const matchedMember = team.find((m) => isCommitByMember(c, m));
       if (!matchedMember) return c;
 
-      const matchedTask = tasks.find(t => 
-        t.assignee?.id === matchedMember.id && 
-        isCommitMatchingTask(c.message, t.name)
+      const matchedTask = tasks.find(
+        (t) => t.assignee?.id === matchedMember.id && isCommitMatchingTask(c.message, t.name)
       );
 
       return {
         ...c,
-        relatedTask: matchedTask || null
+        relatedTask: matchedTask || null,
       };
     });
-  }, [githubCommits, commitHistory, tasks, team, isCommitMatchingTask]);
+  }, [githubCommits, commitHistory, tasks, team, isCommitMatchingTask, isCommitByMember]);
 
   const [toastMessage, setToastMessage] = useState(null);
   const [processedCommits, setProcessedCommits] = useState(() => {
@@ -3323,55 +3547,50 @@ export default function ProjectDetailPage() {
   }, [processedCommits, id]);
 
   useEffect(() => {
-    if (activeCommits.length === 0 || tasks.length === 0 || team.length === 0) return;
+    // CHỈ CHẠY TỰ ĐỘNG DI CHUYỂN NẾU CÓ COMMIT THẬT TỪ GITHUB API (KHÔNG DÙNG COMMIT GIẢ LẬP / DEMO)
+    if (githubCommits.length === 0 || tasks.length === 0 || team.length === 0) return;
 
     let updatedTasks = [...tasks];
     let hasChanges = false;
     let autoMovedList = [];
-    let newlyProcessed = [];
 
-    const successCommits = activeCommits.filter(c => c.status === "success" && !processedCommits.includes(c.id));
+    // Quét tất cả các task đang nằm ở cột "Đang thực hiện" (doing) có phân công người làm
+    const doingTasks = updatedTasks.filter((t) => t.status === "doing" && t.assignee);
 
-    successCommits.forEach(c => {
-      const matchedMember = team.find(m => 
-        (m.fullName && c.author && m.fullName.toLowerCase() === c.author.toLowerCase()) ||
-        (m.name && c.author && m.name.toLowerCase() === c.author.toLowerCase()) ||
-        (m.username && c.authorGithubLogin && m.username.toLowerCase() === c.authorGithubLogin.toLowerCase()) ||
-        (m.githubUsername && c.authorGithubLogin && m.githubUsername.toLowerCase() === c.authorGithubLogin.toLowerCase())
-      );
+    doingTasks.forEach((t) => {
+      // Tìm commit GitHub THẬT nào build thành công của chính người được giao task này và đúng nội dung commit
+      const matchingCommit = githubCommits.find((c) => {
+        if (c.status !== "success") return false;
+        const isAuthor = isCommitByMember(c, t.assignee);
+        const isMatchMsg = isCommitMatchingTask(c.message, t.name);
+        return isAuthor && isMatchMsg;
+      });
 
-      if (!matchedMember) return;
-
-      const myActiveTasks = updatedTasks.filter(t => 
-        t.assignee?.id === matchedMember.id && 
-        t.status !== "review" && 
-        t.status !== "done"
-      );
-
-      for (let t of myActiveTasks) {
-        if (isCommitMatchingTask(c.message, t.name)) {
-          t.status = "review";
-          hasChanges = true;
-          autoMovedList.push({ taskName: t.name, authorName: matchedMember.name || matchedMember.fullName });
-          newlyProcessed.push(c.id);
-          break;
-        }
+      if (matchingCommit) {
+        t.status = "review";
+        hasChanges = true;
+        autoMovedList.push({
+          taskName: t.name,
+          authorName: t.assignee.fullName || t.assignee.name || t.assignee.username || "Thành viên",
+          commitSha: matchingCommit.sha,
+        });
       }
     });
-
-    if (newlyProcessed.length > 0) {
-      setProcessedCommits(prev => [...prev, ...newlyProcessed]);
-    }
 
     if (hasChanges) {
       saveTasks(updatedTasks);
       if (autoMovedList.length > 0) {
-        const listText = autoMovedList.map(item => `🤖 Đã di chuyển task "${item.taskName}" của ${item.authorName} sang cột "Đang xem xét" do commit build thành công!`).join("\n");
+        const listText = autoMovedList
+          .map(
+            (item) =>
+              `🤖 Đã di chuyển task "${item.taskName}" của ${item.authorName} sang cột "Đang xem xét" do tìm thấy commit GitHub #${item.commitSha} phù hợp!`
+          )
+          .join("\n");
         setToastMessage(listText);
         setTimeout(() => setToastMessage(null), 6000);
       }
     }
-  }, [activeCommits, team, tasks, processedCommits, id, isCommitMatchingTask]);
+  }, [githubCommits, team, tasks, isCommitMatchingTask, isCommitByMember]);
 
   const fetchProjectAndMembers = useCallback(async () => {
     if (!id) return;
@@ -3413,22 +3632,31 @@ export default function ProjectDetailPage() {
     window.addEventListener("storage-update", handler);
     window.addEventListener("storage", handler);
 
-    const cols = JSON.parse(localStorage.getItem("columns_" + id)) || [];
-    const tks  = JSON.parse(localStorage.getItem("tasks_" + id)) || [];
+    const tks = JSON.parse(localStorage.getItem("tasks_" + id)) || [];
 
-    if (cols.length === 0) {
-      const init = [
-        { id: "todo",   name: "Chờ xử lý" },
-        { id: "doing",  name: "Đang thực hiện" },
-        { id: "review", name: "Đang xem xét" },
-        { id: "done",   name: "Hoàn thành" },
-      ];
-      setColumns(init);
-      localStorage.setItem("columns_" + id, JSON.stringify(init));
-    } else {
-      setColumns(cols);
+    const defaultCols = [
+      { id: "todo",   name: "Chờ xử lý" },
+      { id: "doing",  name: "Đang thực hiện" },
+      { id: "review", name: "Đang xem xét" },
+      { id: "done",   name: "Hoàn thành" },
+    ];
+    setColumns(defaultCols);
+    localStorage.setItem("columns_" + id, JSON.stringify(defaultCols));
+
+    const validColIds = ["todo", "doing", "review", "done"];
+    let hasOrphan = false;
+    const sanitizedTasks = tks.map((t) => {
+      if (!validColIds.includes(t.status)) {
+        hasOrphan = true;
+        return { ...t, status: "todo" };
+      }
+      return t;
+    });
+
+    if (hasOrphan) {
+      localStorage.setItem("tasks_" + id, JSON.stringify(sanitizedTasks));
     }
-    setTasks(tks);
+    setTasks(sanitizedTasks);
 
     return () => {
       window.removeEventListener("storage-update", handler);
@@ -3436,11 +3664,143 @@ export default function ProjectDetailPage() {
     };
   }, [id, fetchProjectAndMembers]);
 
+  /* ── SPRINT STATE & HELPERS ── */
+  const [sprints, setSprints] = useState(() => {
+    const saved = localStorage.getItem("sprints_" + id);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {}
+    }
+    const defaultSprint = [{
+      id: 1,
+      name: "Sprint 1",
+      status: "active",
+      startDate: new Date().toISOString().split("T")[0],
+      closedDate: null
+    }];
+    localStorage.setItem("sprints_" + id, JSON.stringify(defaultSprint));
+    return defaultSprint;
+  });
+
+  const [selectedSprintId, setSelectedSprintId] = useState(() => {
+    const active = sprints.find((s) => s.status === "active");
+    return active ? active.id : (sprints[sprints.length - 1]?.id || 1);
+  });
+
+  const saveSprints = (data) => {
+    setSprints(data);
+    localStorage.setItem("sprints_" + id, JSON.stringify(data));
+  };
+
+  const activeSprint = useMemo(() => {
+    return sprints.find((s) => s.status === "active") || sprints[sprints.length - 1] || { id: 1, name: "Sprint 1", status: "active" };
+  }, [sprints]);
+
+  const tasksWithSprint = useMemo(() => {
+    return tasks.map((t) => {
+      if (!t.sprintId) {
+        return { ...t, sprintId: 1 };
+      }
+      return t;
+    });
+  }, [tasks]);
+
+  const filteredSprintTasks = useMemo(() => {
+    return tasksWithSprint.filter((t) => Number(t.sprintId || 1) === Number(selectedSprintId));
+  }, [tasksWithSprint, selectedSprintId]);
+
+  const handleCreateSprint = () => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền tạo Sprint mới.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
+
+    const nextId = Math.max(...sprints.map((s) => s.id), 0) + 1;
+    const newSprint = {
+      id: nextId,
+      name: `Sprint ${nextId}`,
+      status: "active",
+      startDate: new Date().toISOString().split("T")[0],
+      closedDate: null,
+    };
+
+    const updatedSprints = sprints.map((s) => ({
+      ...s,
+      status: "closed",
+      closedDate: s.closedDate || new Date().toISOString().split("T")[0],
+    }));
+
+    updatedSprints.push(newSprint);
+    saveSprints(updatedSprints);
+    setSelectedSprintId(nextId);
+    setToastMessage(`✨ Đã khởi tạo và kích hoạt Sprint ${nextId}!`);
+    setTimeout(() => setToastMessage(null), 4500);
+  };
+
+  const handleCloseSprint = (sprintToClose) => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền đóng Sprint.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
+
+    const currentActive = sprintToClose || activeSprint;
+    if (!currentActive || currentActive.status === "closed") {
+      setToastMessage("⚠️ Sprint này đã đóng từ trước.");
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
+
+    if (!window.confirm(`Xác nhận đóng ${currentActive.name}? Các công việc chưa hoàn thành sẽ tự động chuyển sang Sprint tiếp theo.`)) {
+      return;
+    }
+
+    const nextId = Math.max(...sprints.map((s) => s.id), 0) + 1;
+    const newSprint = {
+      id: nextId,
+      name: `Sprint ${nextId}`,
+      status: "active",
+      startDate: new Date().toISOString().split("T")[0],
+      closedDate: null,
+    };
+
+    const updatedSprints = sprints.map((s) => {
+      if (s.id === currentActive.id) {
+        return { ...s, status: "closed", closedDate: new Date().toISOString().split("T")[0] };
+      }
+      return s;
+    });
+    updatedSprints.push(newSprint);
+
+    // Chuyển các task chưa xong (todo, doing, review, blocked) sang Sprint mới
+    const updatedTasks = tasks.map((t) => {
+      const isThisSprint = Number(t.sprintId || 1) === Number(currentActive.id);
+      if (isThisSprint && t.status !== "done") {
+        return { ...t, sprintId: nextId };
+      }
+      return t;
+    });
+
+    saveSprints(updatedSprints);
+    saveTasks(updatedTasks);
+    setSelectedSprintId(nextId);
+    setToastMessage(`🔒 Đã hoàn tất và đóng ${currentActive.name}. Kích hoạt Sprint ${nextId} và chuyển các task chưa hoàn thành sang Sprint mới!`);
+    setTimeout(() => setToastMessage(null), 6000);
+  };
+
   const saveTasks = (data) => { setTasks(data); localStorage.setItem("tasks_" + id, JSON.stringify(data)); };
   const saveColumns = (data) => { setColumns(data); localStorage.setItem("columns_" + id, JSON.stringify(data)); };
 
   /* ── TASK CRUD ── */
   const openCreate = (colId) => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền tạo công việc.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
     setEditTask({ status: colId });
     setFormName(""); setFormAssignee(""); setFormScore(""); setFormBugCount(""); setFormDeadline("");
     setModal(true);
@@ -3448,6 +3808,11 @@ export default function ProjectDetailPage() {
 
   const saveTask = () => {
     if (!formName.trim()) return;
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền tạo hoặc chỉnh sửa công việc.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
     const scoreVal = formScore !== "" ? Math.min(10, Math.max(1, parseInt(formScore) || 0)) : null;
     const bugVal   = formBugCount !== "" ? Math.max(0, parseInt(formBugCount) || 0) : 0;
     const assigneeObj = team.find((m) => m.id === formAssignee) || null;
@@ -3491,6 +3856,7 @@ export default function ProjectDetailPage() {
         id: Date.now().toString(),
         name: formName,
         status: editTask.status,
+        sprintId: selectedSprintId || activeSprint.id || 1,
         assignee: assigneeObj,
         score: scoreVal,
         bugCount: bugVal,
@@ -3506,9 +3872,21 @@ export default function ProjectDetailPage() {
     setModal(false);
   };
 
-  const deleteTask = (task) => saveTasks(tasks.filter((t) => t.id !== task.id));
+  const deleteTask = (task) => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền xóa công việc.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
+    saveTasks(tasks.filter((t) => t.id !== task.id));
+  };
 
   const changeAssignee = (task, member) => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền phân công người thực hiện.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
     const updated = tasks.map((t) =>
       t.id === task.id
         ? { ...t, assignee: t.assignee?.id === member.id ? null : member }
@@ -3532,157 +3910,53 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const changeScore = (task, val) => saveTasks(tasks.map((t) => t.id === task.id ? { ...t, score: val } : t));
+  const changeScore = (task, val) => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền chỉnh sửa điểm độ khó.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
+    saveTasks(tasks.map((t) => t.id === task.id ? { ...t, score: val } : t));
+  };
 
   const openAI = (task) => {
     setChatQuestion(`Tôi cần hỗ trợ với task "${task.name}"${task.bugCount > 0 ? ` — đang có ${task.bugCount} lỗi kiểm thử` : ""}. Hãy giúp tôi phân tích vấn đề.`);
     setChatOpen(true);
   };
 
-  /* ── AI TASK SWAP REQUEST ── */
-  const handleAISwap = (taskA) => {
-    if (!taskA.assignee) {
-      setAiAlert({
-        title: "Không thể hoán đổi",
-        message: "Công việc này chưa được phân công cho ai nên không thể nhờ đổi.",
-        icon: "⚠️"
-      });
-      return;
-    }
+  const [aiSwapTask, setAiSwapTask] = useState(null);
 
-    const userA = taskA.assignee;
-    
-    // Lọc ra các công việc đang thực hiện của các thành viên khác
-    const otherActiveTasks = tasks.filter(t => 
-      t.status !== "done" && 
-      t.assignee && 
-      !isSameMember(t.assignee, userA)
-    );
-
-    if (otherActiveTasks.length === 0) {
-      setAiAlert({
-        title: "Không tìm thấy công việc",
-        message: "Dự án hiện chưa có công việc nào khác đang thực hiện của thành viên khác để hoán đổi.",
-        icon: "🔍"
-      });
-      return;
-    }
-
-    const scoreA = parseInt(taskA.score) || 1;
-
-    // Phân loại các task của người khác
-    const easierTasks = [];
-    const harderTasks = [];
-
-    otherActiveTasks.forEach(t => {
-      const scoreT = parseInt(t.score) || 1;
-      if (scoreT < scoreA) {
-        easierTasks.push({ task: t, member: t.assignee });
-      } else {
-        harderTasks.push({ task: t, member: t.assignee });
-      }
-    });
-
-    const projectId = id;
-    const requestorName = userA.fullName || userA.name || userA.username || "Thành viên";
-
-    // 1. Trường hợp có các task dễ hơn (easierTasks)
-    if (easierTasks.length > 0) {
-      // Sắp xếp dễ nhất đứng trước (score tăng dần)
-      easierTasks.sort((a, b) => (parseInt(a.task.score) || 1) - (parseInt(b.task.score) || 1));
-
-      // Lấy người dễ nhất để gửi thông báo đầu tiên
-      const firstCandidate = easierTasks[0];
-      
-      // Tạo hàng đợi swap
-      localStorage.setItem(`swap_queue_${taskA.id}`, JSON.stringify({
-        queue: easierTasks,
-        currentIndex: 0
-      }));
-
-      // Gửi thông báo cho người đó
-      const targetNotifKey = `sys_notifs_${firstCandidate.member.id}`;
-      const targetNotifs = JSON.parse(localStorage.getItem(targetNotifKey) || "[]");
-      
-      targetNotifs.unshift({
-        id: `swap-req-${taskA.id}-${Date.now()}`,
-        type: "SWAP_REQUEST",
-        title: "🤖 Đề xuất hoán đổi công việc",
-        message: `AI nhận thấy bạn đang làm task "${firstCandidate.task.name}" (Khó: ${firstCandidate.task.score}) dễ hơn task "${taskA.name}" (Khó: ${taskA.score}) của ${requestorName} đang gặp khó khăn. Bạn có đồng ý hoán đổi công việc này không?`,
-        createdAt: Date.now(),
-        isRead: false,
-        metadata: {
-          projectId,
-          taskId: taskA.id,
-          taskName: taskA.name,
-          taskScore: taskA.score,
-          targetTaskId: firstCandidate.task.id,
-          targetTaskName: firstCandidate.task.name,
-          requestorId: userA.id,
-          requestorName,
-          targetId: firstCandidate.member.id,
-          targetName: firstCandidate.member.name || firstCandidate.member.fullName
-        }
-      });
-
-      localStorage.setItem(targetNotifKey, JSON.stringify(targetNotifs));
-      window.dispatchEvent(new CustomEvent("storage-update"));
-      
-      setAiAlert({
-        title: "Đã gửi đề xuất hoán đổi",
-        message: `Trợ lý AI đã phân tích và gửi đề xuất hoán đổi đến thành viên "${firstCandidate.member.name || firstCandidate.member.fullName}" (người đang làm việc dễ nhất).\n\nVui lòng chờ họ phản hồi trong hòm thư hệ thống.`,
-        icon: "🤖"
-      });
-    } 
-    // 2. Trường hợp tất cả công việc đều khó hơn hoặc bằng (harderTasks)
-    else {
-      // Gửi đồng loạt cho tất cả mọi người trong harderTasks
-      harderTasks.forEach(cand => {
-        const targetNotifKey = `sys_notifs_${cand.member.id}`;
-        const targetNotifs = JSON.parse(localStorage.getItem(targetNotifKey) || "[]");
-        
-        targetNotifs.unshift({
-          id: `swap-req-${taskA.id}-${cand.member.id}-${Date.now()}`,
-          type: "SWAP_REQUEST",
-          title: "🤖 Đề xuất hoán đổi công việc (Đồng loạt)",
-          message: `AI báo: ${requestorName} đang gặp khó khăn với task "${taskA.name}" (Khó: ${taskA.score}) và muốn đổi với task "${cand.task.name}" (Khó: ${cand.task.score}) của bạn. Bạn có đồng ý hoán đổi không? (Ai nhận trước sẽ được làm trước).`,
-          createdAt: Date.now(),
-          isRead: false,
-          metadata: {
-            projectId,
-            taskId: taskA.id,
-            taskName: taskA.name,
-            taskScore: taskA.score,
-            targetTaskId: cand.task.id,
-            targetTaskName: cand.task.name,
-            requestorId: userA.id,
-            requestorName,
-            targetId: cand.member.id,
-            targetName: cand.member.name || cand.member.fullName
-          }
-        });
-        
-        localStorage.setItem(targetNotifKey, JSON.stringify(targetNotifs));
-      });
-      
-      window.dispatchEvent(new CustomEvent("storage-update"));
-      
-      setAiAlert({
-        title: "Gửi đề xuất đồng loạt",
-        message: `Do công việc của mọi người đều khó hơn công việc của bạn, AI đã gửi đề xuất hoán đổi đồng loạt cho tất cả thành viên trong nhóm.\n\nNgười đầu tiên nhấn đồng ý nhận sẽ hoán đổi công việc với bạn.`,
-        icon: "🤖"
-      });
-    }
+  const handleAISwap = (task) => {
+    setAiSwapTask(task);
+    setActiveTab("ai");
+    setToastMessage(`✨ Đã mở Trung tâm AI Hub để tư vấn hoán đổi công việc "${task.name}"!`);
+    setTimeout(() => setToastMessage(null), 4500);
   };
 
   /* ── COLUMN ── */
   const addColumn = () => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền thêm cột.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
     if (!newColName.trim()) return;
     saveColumns([...columns, { id: Date.now().toString(), name: newColName }]);
     setNewCol(false); setNewColName("");
   };
-  const renameColumn = (colId, name) => saveColumns(columns.map((c) => c.id === colId ? { ...c, name } : c));
-  const deleteColumn = (colId) => { saveColumns(columns.filter((c) => c.id !== colId)); saveTasks(tasks.filter((t) => t.status !== colId)); };
+  const renameColumn = (colId, name) => {
+    if (!isManager) return;
+    saveColumns(columns.map((c) => c.id === colId ? { ...c, name } : c));
+  };
+  const deleteColumn = (colId) => {
+    if (!isManager) {
+      setToastMessage("⚠️ Chỉ Trưởng nhóm và Quản lý mới có quyền xóa cột.");
+      setTimeout(() => setToastMessage(null), 4500);
+      return;
+    }
+    saveColumns(columns.filter((c) => c.id !== colId));
+    saveTasks(tasks.filter((t) => t.status !== colId));
+  };
 
   /* ── DRAG ── */
   const handleDragStart = ({ active }) => setActiveId(active.id);
@@ -3692,6 +3966,37 @@ export default function ProjectDetailPage() {
     if (!over) return;
     const activeTask = tasks.find((t) => t.id === active.id);
     if (!activeTask) return;
+
+    // Kiểm tra quyền kéo thả của thành viên thường
+    if (!isManager) {
+      const isMyTask = activeTask.assignee && (String(activeTask.assignee.id) === String(currentUser?.id));
+      if (!isMyTask) {
+        setToastMessage("⚠️ Bạn chỉ có thể di chuyển công việc được Trưởng nhóm giao cho chính mình.");
+        setTimeout(() => setToastMessage(null), 4500);
+        return;
+      }
+
+      let targetColId = null;
+      const overColumn = columns.find((c) => c.id === over.id);
+      if (overColumn) {
+        targetColId = overColumn.id;
+      } else {
+        const overTask = tasks.find((t) => t.id === over.id);
+        if (overTask) targetColId = overTask.status;
+      }
+
+      if (activeTask.status === "todo" && targetColId === "doing") {
+        saveTasks(tasks.map((t) => t.id === active.id ? { ...t, status: "doing" } : t));
+        setToastMessage("✅ Đã chuyển công việc sang 'Đang thực hiện'.");
+        setTimeout(() => setToastMessage(null), 4500);
+        return;
+      } else {
+        setToastMessage("⚠️ Thành viên chỉ có thể di chuyển công việc được giao từ 'Chờ xử lý' sang 'Đang thực hiện'.");
+        setTimeout(() => setToastMessage(null), 4500);
+        return;
+      }
+    }
+
     const activeCol = activeTask.status;
     const overColumn = columns.find((c) => c.id === over.id);
     if (overColumn) {
@@ -3786,81 +4091,136 @@ export default function ProjectDetailPage() {
             projectId={id}
             isOwner={isOwner}
             isLeader={isLeader}
+            fetchProjectAndMembers={fetchProjectAndMembers}
           />
         )}
 
         {activeTab === "kanban" && (
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={handleDragStart}
-            onDragEnd={handleDragEnd}
-          >
-            <div className="flex gap-4 items-start overflow-x-auto pb-4">
+          <div className="space-y-4">
+            {/* ── THANH QUẢN LÝ SPRINT (TRÊN BẢNG KANBAN) ── */}
+            <div className="p-4 bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-800 rounded-2xl flex flex-wrap items-center justify-between gap-4 shadow-sm">
+              {/* Left: Sprint Selector & Info */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-800 dark:text-gray-200 uppercase tracking-wider">Danh mục Sprint:</span>
+                </div>
 
-              {columns.map((col) => (
-                <Column
-                  key={col.id}
-                  column={col}
-                  tasks={tasks.filter((t) => t.status === col.id)}
-                  onAddTask={openCreate}
-                  onRenameColumn={renameColumn}
-                  onDeleteColumn={deleteColumn}
-                  team={team}
-                  onEditTask={(t) => {
-                    setEditTask(t);
-                    setFormName(t.name);
-                    setFormAssignee(t.assignee?.id || "");
-                    setFormScore(t.score != null ? String(t.score) : "");
-                    setFormBugCount(t.bugCount ? String(t.bugCount) : "");
-                    setFormDeadline(t.deadline || "");
-                    setModal(true);
-                  }}
-                  onDeleteTask={deleteTask}
-                  onChangeAssignee={changeAssignee}
-                  onChangeScore={changeScore}
-                  onOpenAI={openAI}
-                  onAISwap={handleAISwap}
-                />
-              ))}
+                <select
+                  value={selectedSprintId}
+                  onChange={(e) => setSelectedSprintId(Number(e.target.value))}
+                  className="px-3 py-1.5 bg-gray-100 dark:bg-gray-900 border border-gray-300 dark:border-gray-700 rounded-xl text-xs font-bold text-gray-800 dark:text-white outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  {sprints.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} {s.status === "active" ? "(Đang diễn ra)" : "(Đã đóng)"}
+                    </option>
+                  ))}
+                </select>
 
-              {/* ADD COLUMN */}
-              <div className="w-[280px] flex-shrink-0">
-                {newCol ? (
-                  <div className="bg-white dark:bg-[#0b0f1a] border border-gray-300 dark:border-gray-700 p-3 rounded-2xl">
-                    <input
-                      value={newColName}
-                      onChange={(e) => setNewColName(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && addColumn()}
-                      className="w-full bg-white dark:bg-black border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white px-2 py-1.5 mb-3 rounded-lg text-sm outline-none"
-                      placeholder="Tên cột..."
-                      autoFocus
-                    />
-                    <div className="flex gap-2">
-                      <button onClick={addColumn} className="bg-blue-600 hover:bg-blue-500 px-3 py-1.5 rounded-lg text-sm">Thêm</button>
-                      <button onClick={() => setNewCol(false)} className="px-3 py-1.5 text-gray-600 dark:text-gray-400 hover:text-black dark:hover:text-white text-sm">Hủy</button>
-                    </div>
-                  </div>
+                {/* Sprint Status Badge */}
+                {(() => {
+                  const curr = sprints.find((s) => s.id === selectedSprintId);
+                  const isAct = curr?.status === "active";
+                  return (
+                    <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border ${
+                      isAct 
+                        ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30 animate-pulse" 
+                        : "bg-gray-500/10 text-gray-500 border-gray-500/30"
+                    }`}>
+                      {isAct ? "Đang diễn ra" : "Đã kết thúc"}
+                    </span>
+                  );
+                })()}
+
+                <span className="text-xs text-gray-500 dark:text-gray-400 border-l border-gray-200 dark:border-gray-800 pl-3">
+                  Số công việc: <strong>{filteredSprintTasks.length}</strong> tasks
+                </span>
+              </div>
+
+              {/* Right: Actions for Leader & Manager */}
+              <div className="flex items-center gap-2">
+                {isManager ? (
+                  <>
+                    {(() => {
+                      const selectedSprintObj = sprints.find((s) => s.id === selectedSprintId);
+                      const canClose = selectedSprintObj && selectedSprintObj.status === "active";
+                      if (canClose) {
+                        return (
+                          <button
+                            onClick={() => handleCloseSprint(selectedSprintObj)}
+                            className="px-3.5 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/30 rounded-xl text-xs font-bold transition flex items-center gap-1.5"
+                            title="Đóng Sprint hiện tại và chuyển các task chưa xong sang Sprint mới"
+                          >
+                            Đóng {selectedSprintObj.name}
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    <button
+                      onClick={handleCreateSprint}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold transition shadow-md shadow-blue-500/20 flex items-center gap-1.5"
+                      title="Khởi tạo Sprint tiếp theo"
+                    >
+                      + Tạo Sprint Mới
+                    </button>
+                  </>
                 ) : (
-                  <button
-                    onClick={() => setNewCol(true)}
-                    className="w-10 h-10 rounded-full border border-gray-600 text-xl flex items-center justify-center text-gray-400 hover:text-white hover:border-gray-400 transition"
-                  >
-                    +
-                  </button>
+                  <span className="text-xs text-gray-500 italic">
+                    (Chỉ Trưởng nhóm & Quản lý mới có quyền tạo / đóng Sprint)
+                  </span>
                 )}
               </div>
             </div>
 
-            {/* DRAG OVERLAY */}
-            <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
-              {activeDragTask ? (
-                <div className="rotate-1 scale-105 shadow-2xl shadow-black/60">
-                  <TaskCardContent task={activeDragTask} team={team} dragHandleProps={{}} />
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <div className="flex gap-4 items-start overflow-x-auto pb-4 max-w-full scrollbar-thin">
+
+                {columns.map((col) => (
+                  <Column
+                    key={col.id}
+                    column={col}
+                    tasks={filteredSprintTasks.filter((t) => t.status === col.id)}
+                    onAddTask={openCreate}
+                    onRenameColumn={renameColumn}
+                    onDeleteColumn={deleteColumn}
+                    team={team}
+                    isManager={isManager}
+                    onEditTask={(t) => {
+                      setEditTask(t);
+                      setFormName(t.name);
+                      setFormAssignee(t.assignee?.id || "");
+                      setFormScore(t.score != null ? String(t.score) : "");
+                      setFormBugCount(t.bugCount ? String(t.bugCount) : "");
+                      setFormDeadline(t.deadline || "");
+                      setModal(true);
+                    }}
+                    onDeleteTask={deleteTask}
+                    onChangeAssignee={changeAssignee}
+                    onChangeScore={changeScore}
+                    onOpenAI={openAI}
+                    onAISwap={handleAISwap}
+                  />
+                ))}
+
+              </div>
+
+              {/* DRAG OVERLAY */}
+              <DragOverlay dropAnimation={{ duration: 180, easing: "cubic-bezier(0.18, 0.67, 0.6, 1.22)" }}>
+                {activeDragTask ? (
+                  <div className="rotate-1 scale-105 shadow-2xl shadow-black/60">
+                    <TaskCardContent task={activeDragTask} team={team} dragHandleProps={{}} />
+                  </div>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
+          </div>
         )}
       </div>
 
@@ -3869,21 +4229,31 @@ export default function ProjectDetailPage() {
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white dark:bg-[#0b0f1a] border border-gray-200 dark:border-gray-700 rounded-2xl w-[440px] shadow-2xl">
             <div className="flex justify-between items-center px-5 pt-5 pb-4 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="font-bold text-base text-gray-900 dark:text-white">{editTask?.id ? "Chỉnh sửa công việc" : "Tạo công việc"}</h2>
+              <h2 className="font-bold text-base text-gray-900 dark:text-white">
+                {!isManager ? "Chi tiết công việc" : editTask?.id ? "Chỉnh sửa công việc" : "Tạo công việc"}
+              </h2>
               <button onClick={() => setModal(false)} className="text-gray-400 hover:text-gray-600 dark:hover:text-white">✕</button>
             </div>
 
             <div className="px-5 py-4 space-y-4">
+              {/* Thẻ cảnh báo chỉ đọc đối với thành viên thường */}
+              {!isManager && (
+                <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-xs text-amber-700 dark:text-amber-400 font-medium flex items-center gap-2">
+                  <span>Chế độ chỉ đọc. Chỉ Trưởng nhóm và Quản lý mới có quyền tạo, phân công hoặc sửa công việc.</span>
+                </div>
+              )}
+
               {/* Tên */}
               <div>
                 <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">Tên công việc <span className="text-red-400">*</span></label>
                 <input
+                  disabled={!isManager}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && saveTask()}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white"
+                  onKeyDown={(e) => e.key === "Enter" && isManager && saveTask()}
+                  className={`w-full p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white ${!isManager ? "opacity-75 cursor-not-allowed" : ""}`}
                   placeholder="Nhập tên công việc..."
-                  autoFocus
+                  autoFocus={isManager}
                 />
               </div>
 
@@ -3892,10 +4262,11 @@ export default function ProjectDetailPage() {
                 <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">Hạn hoàn thành</label>
                 <input
                   type="date"
+                  disabled={!isManager}
                   value={formDeadline}
                   onChange={(e) => setFormDeadline(e.target.value)}
-                  onClick={(e) => e.target.showPicker?.()}
-                  className="w-full p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white cursor-pointer"
+                  onClick={(e) => isManager && e.target.showPicker?.()}
+                  className={`w-full p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white ${!isManager ? "opacity-75 cursor-not-allowed" : "cursor-pointer"}`}
                 />
               </div>
 
@@ -3906,12 +4277,14 @@ export default function ProjectDetailPage() {
                   {[1,2,3,4,5,6,7,8,9,10].map((n) => (
                     <button
                       key={n} type="button"
-                      onClick={() => setFormScore(formScore === String(n) ? "" : String(n))}
+                      disabled={!isManager}
+                      onClick={() => isManager && setFormScore(formScore === String(n) ? "" : String(n))}
                       className={`w-9 h-9 rounded-xl border text-sm font-medium transition
+                        ${!isManager ? "opacity-75 cursor-not-allowed" : ""}
                         ${formScore === String(n)
-                          ? n <= 3 ? "border-green-500 bg-green-600/20 text-green-600 dark:text-green-400"
-                            : n <= 6 ? "border-yellow-500 bg-yellow-600/20 text-yellow-600 dark:text-yellow-400"
-                            : "border-red-500 bg-red-600/20 text-red-600 dark:text-red-400"
+                          ? n <= 3 ? "border-green-500 bg-green-600/20 text-green-600 dark:text-green-400 font-bold"
+                            : n <= 6 ? "border-yellow-500 bg-yellow-600/20 text-yellow-600 dark:text-yellow-400 font-bold"
+                            : "border-red-500 bg-red-600/20 text-red-600 dark:text-red-400 font-bold"
                           : "border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-400 hover:border-gray-500"}`}
                     >
                       {n}
@@ -3928,16 +4301,22 @@ export default function ProjectDetailPage() {
                 </label>
                 <input
                   type="number" min={0}
+                  disabled={!isManager}
                   value={formBugCount}
                   onChange={(e) => setFormBugCount(e.target.value)}
                   placeholder="0"
-                  className="w-32 p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white"
+                  className={`w-32 p-2.5 bg-gray-50 dark:bg-black border border-gray-300 dark:border-gray-700 focus:border-blue-500 rounded-xl outline-none text-sm text-gray-900 dark:text-white ${!isManager ? "opacity-75 cursor-not-allowed" : ""}`}
                 />
               </div>
 
               {/* Người thực hiện */}
               <div>
-                <label className="text-sm text-gray-700 dark:text-gray-400 block mb-1 font-medium">Người thực hiện</label>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="text-sm text-gray-700 dark:text-gray-400 font-medium">Người thực hiện</label>
+                  {!isManager && (
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-semibold">Chỉ Trưởng nhóm/Quản lý phân công</span>
+                  )}
+                </div>
                 {team.length === 0
                   ? <p className="text-xs text-gray-500 italic">Chưa có thành viên nào.</p>
                   : (
@@ -3947,10 +4326,13 @@ export default function ProjectDetailPage() {
                         return (
                           <button
                             key={m.id} type="button"
-                            onClick={() => setFormAssignee(selected ? "" : m.id)}
+                            disabled={!isManager}
+                            onClick={() => isManager && setFormAssignee(selected ? "" : m.id)}
+                            title={isManager ? m.name : "Chỉ Trưởng nhóm và Quản lý mới có quyền phân công người thực hiện"}
                             className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm transition
+                              ${!isManager ? "opacity-75 cursor-not-allowed" : ""}
                               ${selected
-                                ? "border-blue-500 bg-blue-600/20 text-blue-700 dark:text-white"
+                                ? "border-blue-500 bg-blue-600/20 text-blue-700 dark:text-white font-semibold"
                                 : "border-gray-300 dark:border-gray-700 bg-white dark:bg-black text-gray-700 dark:text-gray-400 hover:border-gray-500"}`}
                           >
                             <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
@@ -3973,14 +4355,18 @@ export default function ProjectDetailPage() {
                 onClick={() => { openAI({ name: formName || "công việc này", bugCount: parseInt(formBugCount) || 0 }); setModal(false); }}
                 className="flex items-center gap-2 px-3 py-2 bg-indigo-700/30 hover:bg-indigo-700/50 border border-indigo-600/50 rounded-xl text-xs text-indigo-700 dark:text-indigo-300 transition"
               >
-                ✨ Nhờ Trợ lý AI hỗ trợ
+                Nhờ Trợ lý AI hỗ trợ
               </button>
 
               <div className="flex gap-2">
-                <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition">Hủy</button>
-                <button onClick={saveTask} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white">
-                  {editTask?.id ? "Lưu thay đổi" : "Tạo công việc"}
+                <button onClick={() => setModal(false)} className="px-4 py-2 text-sm text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition">
+                  {!isManager ? "Đóng" : "Hủy"}
                 </button>
+                {isManager && (
+                  <button onClick={saveTask} className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl text-sm font-semibold text-white">
+                    {editTask?.id ? "Lưu thay đổi" : "Tạo công việc"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -4010,7 +4396,6 @@ export default function ProjectDetailPage() {
       {/* Toast thông báo AI Auto-Workflow */}
       {toastMessage && (
         <div className="fixed bottom-24 left-6 z-[200] max-w-sm p-4 bg-gradient-to-r from-blue-900 to-indigo-950 border border-blue-500 rounded-2xl shadow-2xl text-white animate-bounce-short flex items-start gap-3">
-          <div className="text-2xl mt-0.5 animate-pulse">🤖</div>
           <div className="flex-1 min-w-0">
             <h4 className="text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">AI Auto-Workflow</h4>
             <p className="text-xs leading-relaxed whitespace-pre-line text-gray-200 font-medium">{toastMessage}</p>
@@ -4023,9 +4408,6 @@ export default function ProjectDetailPage() {
       {aiAlert && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[999] animate-fadeIn p-4">
           <div className="bg-white dark:bg-[#0b0f1a] border border-blue-200 dark:border-blue-900/50 rounded-3xl w-full max-w-[420px] shadow-2xl p-6 text-center space-y-4 animate-cardIn">
-            <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center text-3xl mx-auto border border-blue-500/20 animate-bounce-short">
-              {aiAlert.icon}
-            </div>
             <div className="space-y-1.5 text-center">
               <h3 className="text-base font-bold text-gray-900 dark:text-white">{aiAlert.title}</h3>
               <p className="text-xs text-gray-500 dark:text-gray-400 leading-relaxed whitespace-pre-line">{aiAlert.message}</p>

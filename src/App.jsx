@@ -11,6 +11,7 @@ import MainLayout from "./Layouts/MainLayout";
 import TeamPage from "./pages/TeamPage";
 import SettingPage from "./pages/SettingPage";
 import ProfilePage from "./pages/ProfilePage";
+import CalendarPage from "./pages/CalendarPage";
 
 export default function App() {
   const [projectList, setProjectList] = useState([]);
@@ -26,6 +27,7 @@ export default function App() {
       <Route element={<MainLayout />}>
 
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/team" element={<TeamPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<SettingPage />} />

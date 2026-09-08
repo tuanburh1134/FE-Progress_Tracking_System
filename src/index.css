@@ -13,8 +13,23 @@ body {
   @apply bg-white text-gray-900 font-sans;
 }
 
-html.dark body {
-  @apply bg-gray-950 text-white;
+/* ── Background Đăng nhập / Đăng ký ── */
+.auth-background {
+  background: radial-gradient(circle at 90% 85%, #cdebfd 0%, transparent 55%),
+              radial-gradient(circle at 10% 15%, #d6eeff 0%, transparent 60%),
+              radial-gradient(circle at 50% 50%, #ffffff 0%, transparent 75%),
+              linear-gradient(135deg, #e3f2fd 0%, #f4fafe 50%, #d5ebfd 100%);
+  background-size: cover;
+  background-attachment: fixed;
+  position: relative;
+}
+
+html.dark .auth-background {
+  background: radial-gradient(circle at 90% 85%, rgba(14, 116, 144, 0.35) 0%, transparent 55%),
+              radial-gradient(circle at 10% 15%, rgba(29, 78, 216, 0.4) 0%, transparent 60%),
+              linear-gradient(135deg, #070b14 0%, #0d1527 50%, #020617 100%);
+  background-size: cover;
+  background-attachment: fixed;
 }
 
 /* animation duy nhất */

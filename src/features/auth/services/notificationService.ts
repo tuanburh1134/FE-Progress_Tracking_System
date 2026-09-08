@@ -3,7 +3,13 @@ import { ENDPOINTS } from '@/services/endpoints'
 
 export interface NotificationData {
   id: number
-  type: 'INVITATION_RECEIVED' | 'INVITATION_ACCEPTED' | 'INVITATION_DECLINED'
+  type: 
+    | 'INVITATION_RECEIVED' 
+    | 'INVITATION_ACCEPTED' 
+    | 'INVITATION_DECLINED'
+    | 'TEAM_INVITATION_RECEIVED'
+    | 'TEAM_INVITATION_ACCEPTED'
+    | 'TEAM_INVITATION_DECLINED'
   message: string
   referenceId?: number
   isRead: boolean

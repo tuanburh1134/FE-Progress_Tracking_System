@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { FiHome, FiFolder, FiUsers, FiX, FiChevronRight } from "react-icons/fi";
+import { FiHome, FiFolder, FiUsers, FiCalendar, FiX, FiChevronRight } from "react-icons/fi";
 
 export default function Sidebar({ open, setOpen, mobileOpen, setMobileOpen }) {
   const [user, setUser] = useState(null);
@@ -13,9 +13,10 @@ export default function Sidebar({ open, setOpen, mobileOpen, setMobileOpen }) {
   }, []);
 
   const menu = [
-    { name: "Thống Kê",  path: "/dashboard", icon: <FiHome /> },
-    { name: "Dự Án",     path: "/project",   icon: <FiFolder /> },
-    { name: "Nhóm",      path: "/team",       icon: <FiUsers /> },
+    { name: "Thống Kê",      path: "/dashboard", icon: <FiHome /> },
+    { name: "Dự Án",         path: "/project",   icon: <FiFolder /> },
+    { name: "Lịch Công Việc", path: "/calendar",  icon: <FiCalendar /> },
+    { name: "Nhóm",          path: "/team",       icon: <FiUsers /> },
   ];
 
   // Đóng mobile drawer khi navigate

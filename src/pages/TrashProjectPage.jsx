@@ -84,7 +84,7 @@ export default function TrashProjectPage() {
       {/* HEADER */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold">
-          🗑 Thùng rác
+          Thùng rác
         </h1>
 
         {!loading && (

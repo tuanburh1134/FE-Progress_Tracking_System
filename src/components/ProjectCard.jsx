@@ -1,12 +1,12 @@
 import { useNavigate } from "react-router-dom";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import useAuthStore from "../store/authStore";
 
-const STATUS_COLORS = {
-  PLANNING:    "text-yellow-400 bg-yellow-400/10",
-  IN_PROGRESS: "text-blue-400 bg-blue-400/10",
-  ON_HOLD:     "text-orange-400 bg-orange-400/10",
-  COMPLETED:   "text-green-400 bg-green-400/10",
-  CANCELLED:   "text-red-400 bg-red-400/10",
+const ROLE_CONFIG = {
+  OWNER: { label: "Trưởng nhóm", color: "text-amber-700 bg-amber-100 border border-amber-300 font-semibold dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50" },
+  MANAGER: { label: "Quản lý", color: "text-purple-700 bg-purple-100 border border-purple-300 font-semibold dark:bg-purple-900/30 dark:text-purple-400 dark:border-purple-800/50" },
+  MEMBER: { label: "Thành viên", color: "text-blue-700 bg-blue-100 border border-blue-300 font-medium dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800/50" },
+  VIEWER: { label: "Người xem", color: "text-gray-600 bg-gray-100 border border-gray-300 font-medium dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700" },
 };
 
 const PRIORITY_COLORS = {
@@ -18,9 +18,26 @@ const PRIORITY_COLORS = {
 
 export default function ProjectCard({project, onEdit, onDelete,}) {
   const navigate = useNavigate();
+  const user = useAuthStore((s) => s.user);
 
-  const statusColor = STATUS_COLORS[project.status] || "text-gray-400 bg-gray-400/10";
-  const priorityColor = PRIORITY_COLORS[project.priority] || "text-gray-400";
+  let roleKey = project.myRole || "MEMBER";
+
+  if (user) {
+    if (project.ownerId && Number(project.ownerId) === Number(user.id)) {
+      roleKey = "OWNER";
+    } else if (project.ownerName && (user.fullName === project.ownerName || user.username === project.ownerName)) {
+      roleKey = "OWNER";
+    } else {
+      try {
+        const elevated = JSON.parse(localStorage.getItem(`elevated_managers_${project.id}`) || "[]");
+        if (elevated.some((m) => m === user.id || m === user.username || m === user.fullName)) {
+          roleKey = "MANAGER";
+        }
+      } catch (e) {}
+    }
+  }
+
+  const roleInfo = ROLE_CONFIG[roleKey] || ROLE_CONFIG.MEMBER;
 
   return (
     <div
@@ -68,10 +85,10 @@ export default function ProjectCard({project, onEdit, onDelete,}) {
           </div>
       </div>
 
-      {/* Status badge */}
+      {/* Role badge (Chức vụ của bản thân trong nhóm) */}
       <div className="mb-3">
-        <span className={`text-xs px-2 py-1 rounded-full ${statusColor}`}>
-          {project.statusLabel || project.status}
+        <span className={`text-xs px-2.5 py-1 rounded-full ${roleInfo.color}`}>
+          {roleInfo.label}
         </span>
       </div>
 
@@ -102,4 +119,5 @@ export default function ProjectCard({project, onEdit, onDelete,}) {
     </div>
   );
 }
+
 

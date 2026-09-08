@@ -11,7 +11,7 @@ import { STORAGE_KEYS, API_BASE_URL } from '@/constants'
  */
 const apiClient: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 10000, // 10 giây timeout
+  timeout: 30000, // 30 giây timeout
   headers: {
     'Content-Type': 'application/json',
   },
